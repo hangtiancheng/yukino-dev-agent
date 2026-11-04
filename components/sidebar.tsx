@@ -1,5 +1,7 @@
 "use client";
 import {
+  BookOpen,
+  BotMessageSquare,
   FolderGit2,
   MessageSquare,
   Plus,
@@ -14,7 +16,6 @@ import {
   Sidebar as SidebarPrimitive,
   SidebarContent,
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
@@ -22,6 +23,7 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import type { ChatHistory } from "@/hooks/use-chat";
 
@@ -33,6 +35,12 @@ interface SidebarProps {
   onDelete: (id: string) => void;
 }
 
+const WORKSPACE_LINKS = [
+  { href: "/", labelKey: "oncall", icon: BotMessageSquare, active: true },
+  { href: "/dev-flow", labelKey: "devFlow", icon: FolderGit2, active: false },
+  { href: "/knowledge", labelKey: "knowledge", icon: BookOpen, active: false },
+] as const;
+
 export default function Sidebar({
   histories,
   activeId,
@@ -41,44 +49,52 @@ export default function Sidebar({
   onDelete,
 }: SidebarProps) {
   const t = useTranslations("chat");
+  const tn = useTranslations("nav");
 
   return (
     <SidebarPrimitive
       collapsible="none"
-      className="bg-background text-sidebar-foreground w-full"
+      className="bg-sidebar/70 text-sidebar-foreground w-full backdrop-blur-xl"
     >
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="pointer-events-none">
-              <div className="from-primary to-chart-2 text-primary-foreground shadow-soft flex aspect-square size-8 items-center justify-center rounded-lg bg-linear-to-br">
-                <Snowflake className="size-4" strokeWidth={1.75} />
-              </div>
-              <span className="truncate font-semibold">{t("appName")}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarHeader className="p-3">
+        <div className="flex items-center gap-2.5 px-1 py-0.5">
+          <span className="from-primary to-chart-2 text-primary-foreground shadow-lift ring-primary/25 flex size-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br ring-1">
+            <Snowflake className="size-[18px]" strokeWidth={1.75} />
+          </span>
+          <div className="flex min-w-0 flex-col leading-tight">
+            <span className="text-foreground truncate text-sm font-semibold tracking-tight">
+              {t("appName")}
+            </span>
+            <span className="text-muted-foreground truncate text-[11px]">
+              {tn("oncall")}
+            </span>
+          </div>
+        </div>
       </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>{t("recent")}</SidebarGroupLabel>
-          <SidebarGroupAction title={t("newChat")} onClick={onNewChat}>
-            <Plus />
-          </SidebarGroupAction>
+
+      <SidebarContent className="gap-0">
+        <SidebarGroup className="py-1">
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  variant="outline"
                   onClick={onNewChat}
-                  tooltip={t("newChat")}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground shadow-soft h-9 rounded-lg font-medium"
                 >
                   <Plus />
                   <span>{t("newChat")}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
-            <SidebarMenu className="mt-1">
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup className="min-h-0 flex-1 py-1">
+          <SidebarGroupLabel className="text-muted-foreground/70 px-3 text-[11px]">
+            {t("recent")}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-0.5">
               <AnimatePresence initial={false}>
                 {histories.map((h) => (
                   <motion.li
@@ -99,6 +115,7 @@ export default function Sidebar({
                         onLoad(h.id);
                       }}
                       tooltip={h.title}
+                      className="data-active:bg-primary/12 data-active:text-primary rounded-lg data-active:font-medium"
                     >
                       <MessageSquare />
                       <span>{h.title}</span>
@@ -119,18 +136,26 @@ export default function Sidebar({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup className="mt-auto">
+
+        <SidebarGroup className="mt-auto py-2">
           <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  tooltip={t("devFlowWorkspaceTooltip")}
-                  render={<Link href="/dev-flow" />}
-                >
-                  <FolderGit2 />
-                  <span>{t("devFlowWorkspace")}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+            <SidebarSeparator className="mb-2" />
+            <SidebarGroupLabel className="text-muted-foreground/70 px-3 text-[11px]">
+              {tn("workspace")}
+            </SidebarGroupLabel>
+            <SidebarMenu className="gap-0.5">
+              {WORKSPACE_LINKS.map((link) => (
+                <SidebarMenuItem key={link.href}>
+                  <SidebarMenuButton
+                    isActive={link.active}
+                    render={<Link href={link.href} />}
+                    className="data-active:bg-primary/12 data-active:text-primary rounded-lg data-active:font-medium"
+                  >
+                    <link.icon />
+                    <span>{tn(link.labelKey)}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -184,6 +184,7 @@ export default function DevFlowShell({
 }) {
   const pathname = usePathname();
   const t = useTranslations("devFlow");
+  const tn = useTranslations("nav");
   return (
     <SidebarProvider className="h-svh overflow-hidden">
       <Sidebar collapsible="none" className="w-60">
@@ -191,7 +192,7 @@ export default function DevFlowShell({
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" className="pointer-events-none">
-                <div className="from-primary to-chart-2 text-primary-foreground shadow-soft flex aspect-square size-8 items-center justify-center rounded-lg bg-linear-to-br">
+                <div className="from-primary to-chart-2 text-primary-foreground shadow-lift ring-primary/25 flex aspect-square size-8 items-center justify-center rounded-xl bg-linear-to-br ring-1">
                   <Snowflake className="size-4" strokeWidth={1.75} />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
@@ -243,11 +244,17 @@ export default function DevFlowShell({
                 <span>{t("backToOncall")}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton render={<Link href="/knowledge" />}>
+                <BookOpen />
+                <span>{tn("knowledge")}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="min-w-0 flex-1">
-        <header className="bg-background/75 flex h-14 shrink-0 items-center gap-3 border-b px-4 backdrop-blur-md">
+        <header className="bg-background/70 border-border/60 flex h-14 shrink-0 items-center gap-3 border-b px-4 backdrop-blur-xl">
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-5" />
           <RepoPicker />

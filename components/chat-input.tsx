@@ -58,7 +58,7 @@ export default function ChatInput({
   };
 
   return (
-    <InputGroup className="bg-card shadow-soft focus-within:shadow-lift rounded-3xl p-2 transition-shadow duration-300">
+    <InputGroup className="bg-card/85 shadow-soft focus-within:shadow-lift border-border/60 rounded-3xl p-2 backdrop-blur-xl transition-all duration-300">
       <InputGroupTextarea
         ref={textareaRef}
         value={text}
@@ -119,7 +119,7 @@ export default function ChatInput({
             onClick={send}
             disabled={isStreaming || !text.trim()}
             aria-label={t("send")}
-            className="shadow-soft rounded-full"
+            className="from-primary to-chart-2 shadow-soft rounded-full bg-linear-to-br transition-transform duration-200 hover:scale-105 active:scale-95 disabled:hover:scale-100"
           >
             {isStreaming ? <Spinner /> : <Send />}
           </InputGroupButton>

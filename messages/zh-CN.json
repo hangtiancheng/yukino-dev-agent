@@ -14,11 +14,11 @@
     "retry": "重试",
     "refresh": "刷新"
   },
-  "dock": {
-    "navigation": "主导航",
-    "oncall": "OnCall 助手",
+  "nav": {
+    "label": "主导航",
+    "workspace": "工作台",
+    "oncall": "OnCall",
     "devFlow": "DevFlow",
-    "gallery": "A2UI 组件库",
     "knowledge": "知识库"
   },
   "chat": {
@@ -32,8 +32,6 @@
     "recent": "最近对话",
     "newChat": "新对话",
     "delete": "删除",
-    "devFlowWorkspace": "DevFlow 工作台",
-    "devFlowWorkspaceTooltip": "DevFlow 工作台",
     "tools": "工具",
     "uploadFile": "上传文件",
     "chatMode": "对话模式",
@@ -1064,11 +1062,6 @@
       "feedbackNotFound": "反馈记录不存在",
       "promptNotFound": "提示词不存在"
     }
-  },
-  "gallery": {
-    "title": "A2UI 组件库",
-    "description": "使用模拟消息集渲染全部 shadcn 扩展组件, 无需后端; 触发的操作会显示在下方并输出到控制台",
-    "lastAction": "最近一次操作"
   },
   "oncallOps": {
     "title": "运维面板",

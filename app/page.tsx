@@ -88,7 +88,7 @@ export default function Home() {
           <main className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
             <div className="absolute top-4 right-4 z-10 flex items-center gap-1.5">
               <OncallSettings />
-              <LanguageSwitcher className="bg-background/80 shadow-sm backdrop-blur-sm" />
+              <LanguageSwitcher className="bg-card/80 border-border/60 shadow-soft backdrop-blur-xl" />
             </div>
             <AIOpsBtn
               onClick={() => {

@@ -3,7 +3,6 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 
 import "./globals.css";
-import Dock from "@/components/dock";
 import { SentryProvider } from "@/components/sentry-provider";
 import { Toaster } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -33,7 +32,6 @@ export default async function RootLayout({
         <NextIntlClientProvider locale={locale} messages={messages}>
           <SentryProvider>
             {children}
-            <Dock />
             <Toaster />
           </SentryProvider>
         </NextIntlClientProvider>

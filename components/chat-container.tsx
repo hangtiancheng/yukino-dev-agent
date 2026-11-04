@@ -40,30 +40,33 @@ export default function ChatContainer({
   const centered = messages.length === 0;
   return (
     <div
-      className={`flex flex-1 flex-col overflow-hidden ${
+      className={`relative flex flex-1 flex-col overflow-hidden ${
         centered ? "items-center justify-center" : ""
       }`}
     >
       {centered ? (
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
-            y: { type: "spring", visualDuration: 0.5, bounce: 0.2 },
-            opacity: { duration: 0.3, ease: "easeOut" },
+            y: { type: "spring", visualDuration: 0.55, bounce: 0.18 },
+            opacity: { duration: 0.35, ease: "easeOut" },
           }}
-          className="flex w-full max-w-2xl flex-col items-center px-6 pb-8 text-center"
+          className="flex w-full max-w-xl flex-col items-center px-6 pb-6 text-center"
         >
-          <span className="from-primary to-chart-2 text-primary-foreground shadow-lift ring-primary/25 flex size-14 items-center justify-center rounded-2xl bg-linear-to-br ring-1">
-            <Snowflake className="size-7" strokeWidth={1.6} />
-          </span>
-          <h1 className="text-foreground mt-5 text-2xl font-semibold tracking-tight">
+          <div className="relative flex items-center justify-center">
+            <span className="bg-primary/20 absolute -inset-5 rounded-full blur-2xl" />
+            <span className="from-primary to-chart-2 text-primary-foreground shadow-lift ring-primary/25 relative flex size-16 items-center justify-center rounded-[1.4rem] bg-linear-to-br ring-1">
+              <Snowflake className="size-8" strokeWidth={1.5} />
+            </span>
+          </div>
+          <h1 className="text-foreground mt-7 text-[1.7rem] leading-tight font-semibold tracking-tight text-balance sm:text-3xl">
             {t("greeting")}
           </h1>
-          <p className="text-muted-foreground mt-2 max-w-md text-sm leading-relaxed">
+          <p className="text-muted-foreground mt-3 max-w-md text-sm leading-relaxed text-pretty">
             {t("heroSubtitle")}
           </p>
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
+          <div className="mt-8 flex w-full flex-col gap-2">
             {SUGGESTION_KEYS.map(({ key, icon: Icon }) => (
               <button
                 key={key}
@@ -71,10 +74,14 @@ export default function ChatContainer({
                 onClick={() => {
                   onSend(t(key));
                 }}
-                className="border-border/80 bg-card/80 text-muted-foreground hover:border-primary/40 hover:bg-accent/60 hover:text-foreground shadow-soft inline-flex cursor-pointer items-center gap-2 rounded-full border px-3.5 py-2 text-left text-[13px] transition-colors"
+                className="group border-border/70 bg-card/70 hover:border-primary/40 hover:bg-card shadow-soft hover:shadow-lift flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 text-left backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5"
               >
-                <Icon className="text-primary size-3.5 shrink-0" />
-                <span>{t(key)}</span>
+                <span className="bg-primary/10 text-primary ring-primary/15 group-hover:bg-primary/15 flex size-8 shrink-0 items-center justify-center rounded-lg ring-1 transition-colors">
+                  <Icon className="size-4" strokeWidth={1.75} />
+                </span>
+                <span className="text-foreground/85 min-w-0 flex-1 text-[13px] leading-snug">
+                  {t(key)}
+                </span>
               </button>
             ))}
           </div>
@@ -94,15 +101,17 @@ export default function ChatContainer({
           y: { type: "spring", visualDuration: 0.5, bounce: 0.15 },
           opacity: { duration: 0.3, ease: "easeOut" },
         }}
-        className="w-full px-6 pb-5"
+        className="w-full px-4 pb-5 sm:px-6"
       >
-        <ChatInput
-          isStreaming={isStreaming}
-          mode={mode}
-          onModeChange={onModeChange}
-          onSend={onSend}
-          onUpload={onUpload}
-        />
+        <div className="mx-auto w-full max-w-3xl">
+          <ChatInput
+            isStreaming={isStreaming}
+            mode={mode}
+            onModeChange={onModeChange}
+            onSend={onSend}
+            onUpload={onUpload}
+          />
+        </div>
       </motion.div>
     </div>
   );

@@ -147,6 +147,18 @@ export interface ChatReference {
 
 const REFERENCE_EXCERPT_CHARS = 200;
 
+async function retrieveOrEmpty(question: string): Promise<RetrievedDoc[]> {
+  try {
+    return await retrieve(question);
+  } catch (e) {
+    console.error(
+      "[chat] knowledge retrieval failed, answering without references:",
+      e,
+    );
+    return [];
+  }
+}
+
 export function toReferences(docs: RetrievedDoc[]): ChatReference[] {
   return docs.map((doc) => {
     const metaTitle = doc.metadata.title;
@@ -190,7 +202,7 @@ export {
 export async function chat(id: string, question: string): Promise<ChatResult> {
   const mem = getSimpleMemory(id);
   const history = mem.getMessages();
-  const docs = await retrieve(question);
+  const docs = await retrieveOrEmpty(question);
   const documents = docs.map((d) => d.content).join("\n");
   const references = toReferences(docs);
   const { tools, mcpNames } = await buildChatTools();
@@ -426,7 +438,7 @@ export async function* chatStream(
 ): AsyncGenerator<ChatStreamEvent> {
   const mem = getSimpleMemory(id);
   const history = mem.getMessages();
-  const docs = await retrieve(question);
+  const docs = await retrieveOrEmpty(question);
   const documents = docs.map((d) => d.content).join("\n");
   const references = toReferences(docs);
   const { tools, mcpNames } = await buildChatTools();

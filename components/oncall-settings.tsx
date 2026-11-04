@@ -447,7 +447,7 @@ export function OncallSettings() {
           <Button
             size="icon"
             variant="outline"
-            className="bg-background/80 shadow-sm backdrop-blur-sm"
+            className="bg-card/80 border-border/60 shadow-soft backdrop-blur-xl"
             title={t("title")}
           >
             <Settings2 className="size-4" />

@@ -16,7 +16,7 @@ export default function LoadingOverlay({ overlay }: LoadingOverlayProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="bg-background/70 fixed inset-0 z-9999 flex items-center justify-center backdrop-blur-sm"
+          className="bg-background/60 fixed inset-0 z-9999 flex items-center justify-center backdrop-blur-md"
           role="status"
           aria-live="polite"
         >
@@ -25,7 +25,7 @@ export default function LoadingOverlay({ overlay }: LoadingOverlayProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 6 }}
             transition={{ type: "spring", visualDuration: 0.4, bounce: 0.2 }}
-            className="bg-card text-card-foreground flex flex-col items-center rounded-2xl px-12 py-10 text-center shadow-2xl"
+            className="bg-card/90 text-card-foreground border-border/60 shadow-lift flex flex-col items-center rounded-2xl border px-12 py-10 text-center backdrop-blur-xl"
           >
             <Spinner className="text-primary size-10" />
             <div className="mt-5 text-lg font-semibold">{overlay.text}</div>

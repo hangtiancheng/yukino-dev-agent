@@ -408,7 +408,7 @@ export default function ActiveAlertsPanel({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="bg-background pointer-events-auto flex max-h-[70svh] w-96 flex-col overflow-hidden rounded-xl border shadow-lg"
+          className="bg-card/85 border-border/60 shadow-lift pointer-events-auto flex max-h-[70svh] w-96 flex-col overflow-hidden rounded-2xl border backdrop-blur-xl"
         >
           <div className="border-b px-3 py-2">
             <div className="flex items-center justify-between">
@@ -696,7 +696,7 @@ export default function ActiveAlertsPanel({
       <Button
         size="icon"
         variant={open ? "default" : "secondary"}
-        className="pointer-events-auto relative size-11 rounded-full shadow-lg"
+        className="shadow-lift pointer-events-auto relative size-11 rounded-full"
         onClick={() => {
           setOpen((v) => !v);
         }}
@@ -705,7 +705,7 @@ export default function ActiveAlertsPanel({
       >
         <Siren className="size-5" />
         {!open && alerts.length > 0 && (
-          <span className="absolute -top-1 -right-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white">
+          <span className="bg-destructive ring-card absolute -top-1 -right-1 flex min-h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-semibold text-white ring-2">
             {alerts.length}
           </span>
         )}

@@ -14,12 +14,12 @@
     "retry": "Retry",
     "refresh": "Refresh"
   },
-  "dock": {
-    "navigation": "Primary",
-    "oncall": "OnCall Agent",
+  "nav": {
+    "label": "Primary",
+    "workspace": "Workspace",
+    "oncall": "OnCall",
     "devFlow": "DevFlow",
-    "gallery": "A2UI Gallery",
-    "knowledge": "Knowledge base"
+    "knowledge": "Knowledge"
   },
   "chat": {
     "appName": "Yukino Agent",
@@ -32,8 +32,6 @@
     "recent": "Recent",
     "newChat": "New chat",
     "delete": "Delete",
-    "devFlowWorkspace": "DevFlow Workspace",
-    "devFlowWorkspaceTooltip": "DevFlow workspace",
     "tools": "Tools",
     "uploadFile": "Upload file",
     "chatMode": "Chat mode",
@@ -1064,11 +1062,6 @@
       "feedbackNotFound": "Feedback record not found",
       "promptNotFound": "Prompt not found"
     }
-  },
-  "gallery": {
-    "title": "A2UI Catalog Gallery",
-    "description": "Renders all shadcn extension components from a mock message set — no backend required. Triggered actions are logged below and in the console.",
-    "lastAction": "Last action"
   },
   "oncallOps": {
     "title": "Operations panel",

@@ -125,7 +125,10 @@ export default function AIOpsBtn({ onClick, disabled }: AIOpsButtonProps) {
             className="cursor-grab touch-none active:cursor-grabbing"
           />
         }
-        className={cn("rounded-full px-4 shadow-lg", disabled && "opacity-50")}
+        className={cn(
+          "from-primary to-chart-2 shadow-lift rounded-full bg-linear-to-br px-4",
+          disabled && "opacity-50",
+        )}
       >
         <Layers data-icon="inline-start" />
         <span>AI Ops</span>

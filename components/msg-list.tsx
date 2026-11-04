@@ -56,7 +56,7 @@ export default function MessageList({
     <MessageScrollerProvider autoScroll>
       <MessageScroller className="min-h-0 flex-1">
         <MessageScrollerViewport>
-          <MessageScrollerContent className="px-6 py-4">
+          <MessageScrollerContent className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
             {messages.map((m, i) => (
               <MessageScrollerItem
                 key={i}
@@ -286,7 +286,7 @@ function ReasoningDetails({
       <summary className="text-muted-foreground hover:text-foreground w-fit cursor-pointer list-none text-xs select-none">
         {t("reasoning")}
       </summary>
-      <div className="border-border bg-card mt-1 max-h-60 overflow-y-auto rounded-md border-l-2 py-2 pr-3 pl-3">
+      <div className="bg-muted/40 border-border border-l-primary/60 mt-1 max-h-60 overflow-y-auto rounded-md border-l-2 py-2 pr-3 pl-3">
         <MdRender
           content={reasoning}
           streaming={streaming}
@@ -314,8 +314,8 @@ const MessageItem = memo(function MessageItem({
   if (message.type === "user") {
     return (
       <Message align="end">
-        <Bubble align="end" variant="default" className="max-w-[75%]">
-          <BubbleContent className="shadow-soft rounded-2xl rounded-br-sm whitespace-pre-wrap">
+        <Bubble align="end" variant="default" className="max-w-[80%]">
+          <BubbleContent className="from-primary to-chart-2 shadow-soft rounded-2xl rounded-br-sm bg-linear-to-br whitespace-pre-wrap">
             {message.content}
           </BubbleContent>
         </Bubble>
