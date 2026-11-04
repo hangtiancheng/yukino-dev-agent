@@ -7,6 +7,12 @@
   },
   "common": {
     "switchLanguage": "切换语言",
+    "theme": {
+      "label": "切换主题",
+      "light": "浅色",
+      "dark": "深色",
+      "system": "跟随系统"
+    },
     "unknownError": "未知错误",
     "somethingWentWrong": "出了点问题, 请重试",
     "cancel": "取消",
@@ -102,7 +108,6 @@
   "devFlow": {
     "title": "DevFlow",
     "subtitle": "研发 Agent",
-    "toggleTheme": "切换主题",
     "connectRepo": "连接仓库",
     "selectRepo": "选择仓库",
     "backToOncall": "Yukino OnCall",

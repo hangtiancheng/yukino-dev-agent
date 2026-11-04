@@ -7,6 +7,12 @@
   },
   "common": {
     "switchLanguage": "Switch language",
+    "theme": {
+      "label": "Switch theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
     "unknownError": "Unknown error",
     "somethingWentWrong": "Something went wrong; please retry",
     "cancel": "Cancel",
@@ -102,7 +108,6 @@
   "devFlow": {
     "title": "DevFlow",
     "subtitle": "Engineering Copilot",
-    "toggleTheme": "Toggle theme",
     "connectRepo": "Connect a repository",
     "selectRepo": "Select repository",
     "backToOncall": "Yukino OnCall",

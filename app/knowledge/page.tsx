@@ -17,6 +17,7 @@ import { z } from "zod/v4";
 
 import { notify } from "@/components/dev-flow/notify";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -295,7 +296,8 @@ export default function KnowledgePage() {
               );
             })}
           </nav>
-          <div className="ml-auto flex items-center">
+          <div className="ml-auto flex items-center gap-1.5">
+            <ThemeToggle />
             <LanguageSwitcher />
           </div>
         </div>

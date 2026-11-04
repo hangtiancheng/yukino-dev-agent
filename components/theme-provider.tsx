@@ -2,8 +2,14 @@
 
 import * as React from "react";
 
-type Theme = "dark" | "light" | "system";
-type ResolvedTheme = "dark" | "light";
+import {
+  DEFAULT_THEME,
+  isTheme,
+  LEGACY_THEME_STORAGE_KEYS,
+  THEME_STORAGE_KEY,
+  type ResolvedTheme,
+  type Theme,
+} from "@/lib/theme";
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -18,19 +24,10 @@ interface ThemeProviderState {
 }
 
 const COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)";
-const THEME_VALUES: Theme[] = ["dark", "light", "system"];
 
 const ThemeProviderContext = React.createContext<
   ThemeProviderState | undefined
 >(undefined);
-
-function isTheme(value: string | null): value is Theme {
-  if (value === null) {
-    return false;
-  }
-
-  return THEME_VALUES.includes(value as Theme);
-}
 
 function getSystemTheme(): ResolvedTheme {
   if (window.matchMedia(COLOR_SCHEME_QUERY).matches) {
@@ -38,6 +35,32 @@ function getSystemTheme(): ResolvedTheme {
   }
 
   return "light";
+}
+
+function readStoredTheme(storageKey: string): Theme | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const stored = localStorage.getItem(storageKey);
+  if (isTheme(stored)) {
+    return stored;
+  }
+
+  // Migrate the old per-surface keys into the shared key.
+  for (const legacyKey of LEGACY_THEME_STORAGE_KEYS) {
+    if (legacyKey === storageKey) {
+      continue;
+    }
+    const legacy = localStorage.getItem(legacyKey);
+    if (isTheme(legacy)) {
+      localStorage.setItem(storageKey, legacy);
+      localStorage.removeItem(legacyKey);
+      return legacy;
+    }
+  }
+
+  return null;
 }
 
 function disableTransitionsTemporarily() {
@@ -80,20 +103,13 @@ function isEditableTarget(target: EventTarget | null) {
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
-  storageKey = "theme",
+  defaultTheme = DEFAULT_THEME,
+  storageKey = THEME_STORAGE_KEY,
   disableTransitionOnChange = true,
   ...props
 }: ThemeProviderProps) {
   const [theme, setThemeState] = React.useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      const storedTheme = localStorage.getItem(storageKey);
-      if (isTheme(storedTheme)) {
-        return storedTheme;
-      }
-    }
-
-    return defaultTheme;
+    return readStoredTheme(storageKey) ?? defaultTheme;
   });
 
   const setTheme = React.useCallback(
@@ -107,7 +123,7 @@ export function ThemeProvider({
   const applyTheme = React.useCallback(
     (nextTheme: Theme) => {
       const root = document.documentElement;
-      const resolvedTheme =
+      const resolvedTheme: ResolvedTheme =
         nextTheme === "system" ? getSystemTheme() : nextTheme;
       const restoreTransitions = disableTransitionOnChange
         ? disableTransitionsTemporarily()
@@ -115,6 +131,7 @@ export function ThemeProvider({
 
       root.classList.remove("light", "dark");
       root.classList.add(resolvedTheme);
+      root.style.colorScheme = resolvedTheme;
 
       if (restoreTransitions) {
         restoreTransitions();
@@ -161,7 +178,7 @@ export function ThemeProvider({
       }
 
       setThemeState((currentTheme) => {
-        const nextTheme =
+        const nextTheme: Theme =
           currentTheme === "dark"
             ? "light"
             : currentTheme === "light"

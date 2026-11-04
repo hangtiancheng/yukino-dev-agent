@@ -13,13 +13,11 @@ import {
   Boxes,
   LayoutDashboard,
   MessageSquareText,
-  Moon,
   Network,
   Share2,
   Workflow,
   GitPullRequest,
   Snowflake,
-  Sun,
   ThumbsUp,
 } from "lucide-react";
 import Link from "next/link";
@@ -27,7 +25,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations, type Messages } from "next-intl";
 
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { useTheme } from "@/components/theme-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -114,24 +112,6 @@ const NAV_GROUPS: {
     ],
   },
 ];
-
-function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  const t = useTranslations("devFlow");
-  const isDark = theme === "dark";
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      aria-label={t("toggleTheme")}
-      onClick={() => {
-        setTheme(isDark ? "light" : "dark");
-      }}
-    >
-      {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-    </Button>
-  );
-}
 
 function RepoPicker() {
   const { repos, reposLoading, repoId, setRepoId } = useDevFlow();
