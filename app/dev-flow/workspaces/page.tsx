@@ -37,17 +37,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Empty, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -215,14 +209,12 @@ function CreateWorkspaceDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("dialog.title")}</DialogTitle>
-          <DialogDescription>{t("dialog.description")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <Field>
             <FieldLabel htmlFor="ws-name">{t("dialog.name")}</FieldLabel>
             <Input
               id="ws-name"
-              placeholder={t("dialog.namePlaceholder")}
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
@@ -425,10 +417,10 @@ export default function DevFlowWorkspacesPage() {
   const totals = detail ? detail.stats.totals : null;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <PageHeader
         title={t("title")}
-        description={t("description")}
+
         actions={
           <Button
             onClick={() => {
@@ -454,7 +446,6 @@ export default function DevFlowWorkspacesPage() {
                 <Boxes />
               </EmptyMedia>
               <EmptyTitle>{t("empty")}</EmptyTitle>
-              <EmptyDescription>{t("emptyDescription")}</EmptyDescription>
             </Empty>
           </CardContent>
         </Card>
@@ -743,11 +734,7 @@ export default function DevFlowWorkspacesPage() {
                           <DevFlowMarkdown content={report.reportMarkdown} />
                         </div>
                       </div>
-                    ) : (
-                      <p className="text-muted-foreground text-sm">
-                        {t("noReportDescription")}
-                      </p>
-                    )}
+                    ) : null}
                   </CardContent>
                 </Card>
               </>

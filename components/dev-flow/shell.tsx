@@ -49,6 +49,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -57,7 +58,7 @@ import { useDevFlow } from "./provider";
 type DevFlowNavKey = keyof Messages["devFlow"]["nav"];
 
 const NAV_GROUPS: {
-  labelKey: DevFlowNavKey;
+  labelKey?: DevFlowNavKey;
   items: {
     href: string;
     labelKey: DevFlowNavKey;
@@ -65,7 +66,6 @@ const NAV_GROUPS: {
   }[];
 }[] = [
   {
-    labelKey: "overview",
     items: [
       { href: "/dev-flow", labelKey: "dashboard", icon: LayoutDashboard },
     ],
@@ -117,16 +117,18 @@ function RepoPicker() {
   const { repos, reposLoading, repoId, setRepoId } = useDevFlow();
   const t = useTranslations("devFlow");
   if (reposLoading) {
-    return <Skeleton className="h-8 w-52" />;
+    return <Skeleton className="h-9 w-36 sm:w-56" />;
   }
   if (repos.length === 0) {
     return (
-      <Link href="/dev-flow/repos">
-        <Button variant="outline" size="sm">
-          <GitBranch className="size-3.5" />
-          {t("connectRepo")}
-        </Button>
-      </Link>
+      <Button
+        variant="outline"
+        size="sm"
+        render={<Link href="/dev-flow/repos" />}
+      >
+        <GitBranch className="size-3.5" />
+        {t("connectRepo")}
+      </Button>
     );
   }
   return (
@@ -138,7 +140,10 @@ function RepoPicker() {
         }
       }}
     >
-      <SelectTrigger className="w-56" aria-label={t("selectRepo")}>
+      <SelectTrigger
+        className="bg-background w-36 sm:w-60"
+        aria-label={t("selectRepo")}
+      >
         <GitBranch className="text-muted-foreground size-3.5" />
         <SelectValue placeholder={t("selectRepo")}>
           {(value: string | null) =>
@@ -157,66 +162,80 @@ function RepoPicker() {
   );
 }
 
+function Navigation() {
+  const pathname = usePathname();
+  const t = useTranslations("devFlow");
+  const { setOpenMobile } = useSidebar();
+
+  return NAV_GROUPS.map((group) => (
+    <SidebarGroup key={group.items[0].href} className="px-3 py-2">
+      {group.labelKey ? (
+        <SidebarGroupLabel className="px-3 text-xs font-medium">
+          {t(`nav.${group.labelKey}`)}
+        </SidebarGroupLabel>
+      ) : null}
+      <SidebarGroupContent>
+        <SidebarMenu className="gap-1">
+          {group.items.map((item) => {
+            const active =
+              item.href === "/dev-flow"
+                ? pathname === "/dev-flow"
+                : pathname.startsWith(item.href);
+            return (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  isActive={active}
+                  aria-current={active ? "page" : undefined}
+                  onClick={() => {
+                    setOpenMobile(false);
+                  }}
+                  render={<Link href={item.href} />}
+                  className="text-sidebar-foreground/80 data-active:bg-card data-active:text-primary h-9 px-3 data-active:font-semibold data-active:shadow-xs"
+                >
+                  <item.icon className="size-4" strokeWidth={1.75} />
+                  <span>{t(`nav.${item.labelKey}`)}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  ));
+}
+
 export default function DevFlowShell({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
   const t = useTranslations("devFlow");
   const tn = useTranslations("nav");
   return (
     <SidebarProvider className="h-svh overflow-hidden">
-      <Sidebar collapsible="none" className="w-60">
-        <SidebarHeader>
+      <Sidebar collapsible="offcanvas">
+        <SidebarHeader className="px-4 py-4">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" className="pointer-events-none">
-                <div className="from-primary to-chart-2 text-primary-foreground shadow-lift ring-primary/25 flex aspect-square size-8 items-center justify-center rounded-xl bg-linear-to-br ring-1">
+              <SidebarMenuButton
+                size="lg"
+                render={<Link href="/dev-flow" />}
+                className="h-11 gap-3 px-0 hover:bg-transparent"
+              >
+                <div className="bg-primary text-primary-foreground flex aspect-square size-9 items-center justify-center rounded-xl">
                   <Snowflake className="size-4" strokeWidth={1.75} />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-semibold">{t("title")}</span>
-                  <span className="text-muted-foreground text-xs">
-                    {t("subtitle")}
-                  </span>
                 </div>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
         <SidebarContent>
-          {NAV_GROUPS.map((group) => (
-            <SidebarGroup key={group.labelKey}>
-              <SidebarGroupLabel>
-                {t(`nav.${group.labelKey}`)}
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {group.items.map((item) => {
-                    const active =
-                      item.href === "/dev-flow"
-                        ? pathname === "/dev-flow"
-                        : pathname.startsWith(item.href);
-                    return (
-                      <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                          isActive={active}
-                          render={<Link href={item.href} />}
-                          className="data-active:bg-primary/10 data-active:text-primary data-active:font-semibold"
-                        >
-                          <item.icon />
-                          <span>{t(`nav.${item.labelKey}`)}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          ))}
+          <Navigation />
         </SidebarContent>
-        <SidebarFooter>
+        <SidebarFooter className="mx-3 mb-2 border-t px-0 pt-3">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton render={<Link href="/" />}>
@@ -234,7 +253,7 @@ export default function DevFlowShell({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="min-w-0 flex-1">
-        <header className="bg-background/70 border-border/60 flex h-14 shrink-0 items-center gap-3 border-b px-4 backdrop-blur-xl">
+        <header className="bg-card flex h-16 shrink-0 items-center gap-2 border-b px-4 sm:gap-3 sm:px-6">
           <SidebarTrigger />
           <Separator orientation="vertical" className="h-5" />
           <RepoPicker />
@@ -243,7 +262,7 @@ export default function DevFlowShell({
             <ThemeToggle />
           </div>
         </header>
-        <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

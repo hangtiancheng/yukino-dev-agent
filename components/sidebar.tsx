@@ -24,6 +24,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import type { ChatHistory } from "@/hooks/use-chat";
 
@@ -50,36 +51,34 @@ export default function Sidebar({
 }: SidebarProps) {
   const t = useTranslations("chat");
   const tn = useTranslations("nav");
+  const { setOpenMobile } = useSidebar();
 
   return (
-    <SidebarPrimitive
-      collapsible="none"
-      className="bg-sidebar/70 text-sidebar-foreground w-full backdrop-blur-xl"
-    >
-      <SidebarHeader className="p-3">
-        <div className="flex items-center gap-2.5 px-1 py-0.5">
-          <span className="from-primary to-chart-2 text-primary-foreground shadow-lift ring-primary/25 flex size-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br ring-1">
+    <SidebarPrimitive collapsible="offcanvas">
+      <SidebarHeader className="px-4 py-5">
+        <div className="flex items-center gap-3">
+          <span className="bg-primary text-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-xl">
             <Snowflake className="size-[18px]" strokeWidth={1.75} />
           </span>
           <div className="flex min-w-0 flex-col leading-tight">
             <span className="text-foreground truncate text-sm font-semibold tracking-tight">
               {t("appName")}
             </span>
-            <span className="text-muted-foreground truncate text-[11px]">
-              {tn("oncall")}
-            </span>
           </div>
         </div>
       </SidebarHeader>
 
       <SidebarContent className="gap-0">
-        <SidebarGroup className="py-1">
+        <SidebarGroup className="px-3 py-1">
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={onNewChat}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground shadow-soft h-9 rounded-lg font-medium"
+                  onClick={() => {
+                    onNewChat();
+                    setOpenMobile(false);
+                  }}
+                  className="bg-card border-border text-foreground hover:bg-accent h-10 rounded-lg border font-medium"
                 >
                   <Plus />
                   <span>{t("newChat")}</span>
@@ -89,10 +88,12 @@ export default function Sidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup className="min-h-0 flex-1 py-1">
-          <SidebarGroupLabel className="text-muted-foreground/70 px-3 text-[11px]">
-            {t("recent")}
-          </SidebarGroupLabel>
+        <SidebarGroup className="min-h-0 flex-1 px-3 py-3">
+          {histories.length > 0 ? (
+            <SidebarGroupLabel className="text-muted-foreground px-3 text-xs">
+              {t("recent")}
+            </SidebarGroupLabel>
+          ) : null}
           <SidebarGroupContent>
             <SidebarMenu className="gap-0.5">
               <AnimatePresence initial={false}>
@@ -113,6 +114,7 @@ export default function Sidebar({
                       isActive={h.id === activeId}
                       onClick={() => {
                         onLoad(h.id);
+                        setOpenMobile(false);
                       }}
                       tooltip={h.title}
                       className="data-active:bg-primary/12 data-active:text-primary rounded-lg data-active:font-medium"
@@ -137,17 +139,18 @@ export default function Sidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup className="mt-auto py-2">
+        <SidebarGroup className="mt-auto px-3 py-3">
           <SidebarGroupContent>
             <SidebarSeparator className="mb-2" />
-            <SidebarGroupLabel className="text-muted-foreground/70 px-3 text-[11px]">
-              {tn("workspace")}
-            </SidebarGroupLabel>
             <SidebarMenu className="gap-0.5">
               {WORKSPACE_LINKS.map((link) => (
                 <SidebarMenuItem key={link.href}>
                   <SidebarMenuButton
                     isActive={link.active}
+                    aria-current={link.active ? "page" : undefined}
+                    onClick={() => {
+                      setOpenMobile(false);
+                    }}
                     render={<Link href={link.href} />}
                     className="data-active:bg-primary/12 data-active:text-primary rounded-lg data-active:font-medium"
                   >

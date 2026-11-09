@@ -18,12 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Empty, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -118,7 +113,7 @@ function MetricCard({
 }
 
 export default function DevFlowFeedbackPage() {
-  const { repoId, repo } = useDevFlow();
+  const { repoId } = useDevFlow();
   const t = useTranslations("devFlow.feedback");
   const tChat = useTranslations("devFlow.agentChat");
   const tc = useTranslations("common");
@@ -232,14 +227,9 @@ export default function DevFlowFeedbackPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <PageHeader
         title={t("title")}
-        description={
-          repo
-            ? t("descriptionRepo", { repo: repo.fullName })
-            : t("descriptionNone")
-        }
         actions={
           <div className="flex items-center gap-1.5">
             {(["all", "open", "resolved"] as const).map((f) => (
@@ -333,7 +323,6 @@ export default function DevFlowFeedbackPage() {
                 <ThumbsUp />
               </EmptyMedia>
               <EmptyTitle>{t("noFeedback")}</EmptyTitle>
-              <EmptyDescription>{t("noFeedbackDescription")}</EmptyDescription>
             </Empty>
           ) : (
             <div className="overflow-x-auto">
@@ -505,9 +494,6 @@ export default function DevFlowFeedbackPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("reviewFeedback")}</DialogTitle>
-            <DialogDescription>
-              {t("reviewFeedbackDescription")}
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="flex gap-2">

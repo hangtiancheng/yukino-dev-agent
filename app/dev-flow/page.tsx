@@ -23,7 +23,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Empty,
   EmptyContent,
-  EmptyDescription,
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
@@ -56,30 +55,39 @@ function StatCard({
   href?: string;
 }) {
   const body = (
-    <Card className="group/stat shadow-soft hover:shadow-lift transition-all duration-200 hover:-translate-y-0.5">
-      <CardContent className="flex items-center gap-3.5 pt-5 pb-5">
-        <div className="from-primary/12 to-chart-2/20 text-primary ring-primary/10 flex size-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br ring-1 transition-transform duration-200 group-hover/stat:scale-105">
-          <Icon className="size-5" />
+    <div className="group/stat bg-card hover:bg-accent/40 relative h-full px-5 py-5 transition-colors">
+      <Icon
+        className="text-muted-foreground absolute top-5 right-4 size-4"
+        strokeWidth={1.75}
+      />
+      <div className="min-w-0">
+        <div className="text-foreground pr-5 text-3xl leading-none font-semibold tracking-tight tabular-nums">
+          {value}
         </div>
-        <div className="min-w-0">
-          <div className="text-foreground text-2xl leading-none font-semibold tabular-nums">
-            {value}
-          </div>
-          <div className="text-muted-foreground mt-1.5 truncate text-xs">
-            {label}
-            {hint ? <span className="ml-1 opacity-70">· {hint}</span> : null}
-          </div>
+        <div className="text-muted-foreground mt-3 text-xs">
+          {label}
+          {hint ? <span className="mt-1 block text-[11px]">{hint}</span> : null}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
-  return href ? <Link href={href}>{body}</Link> : body;
+  return href ? (
+    <Link
+      href={href}
+      className="focus-visible:ring-ring outline-none focus-visible:ring-2 focus-visible:ring-inset"
+    >
+      {body}
+    </Link>
+  ) : (
+    body
+  );
 }
 
 export default function DevFlowDashboard() {
-  const { repoId, repo, repos, reposLoading, refreshRepos } = useDevFlow();
+  const { repoId, repos, reposLoading, refreshRepos } = useDevFlow();
   const t = useTranslations("devFlow.dashboard");
   const tb = useTranslations("devFlow.badges");
+  const tc = useTranslations("common");
   const [stats, setStats] = useState<DevFlowStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -138,14 +146,13 @@ export default function DevFlowDashboard() {
 
   if (!reposLoading && repos.length === 0) {
     return (
-      <div className="mx-auto max-w-5xl space-y-6 p-6">
-        <PageHeader title={t("title")} description={t("descriptionEmpty")} />
+      <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <PageHeader title={t("title")} />
         <Empty className="border-border rounded-xl border border-dashed py-16">
           <EmptyMedia variant="icon">
             <FolderGit2 />
           </EmptyMedia>
           <EmptyTitle>{t("noReposTitle")}</EmptyTitle>
-          <EmptyDescription>{t("noReposDescription")}</EmptyDescription>
           <EmptyContent>
             <Link href="/dev-flow/repos">
               <Button>
@@ -160,14 +167,9 @@ export default function DevFlowDashboard() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <PageHeader
         title={t("title")}
-        description={
-          repo
-            ? t("descriptionRepo", { repo: repo.fullName })
-            : t("descriptionAll")
-        }
         actions={
           <Button
             onClick={() => {
@@ -182,15 +184,32 @@ export default function DevFlowDashboard() {
         }
       />
 
-      {loading || !stats ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
         </div>
+      ) : !stats ? (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-muted-foreground text-sm">
+              {tc("somethingWentWrong")}
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setReloadKey((key) => key + 1);
+              }}
+            >
+              <RefreshCw />
+              {tc("retry")}
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-xl border sm:grid-cols-3 xl:grid-cols-6">
             <StatCard
               icon={CircleDot}
               label={t("openIssues")}
@@ -232,13 +251,13 @@ export default function DevFlowDashboard() {
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">
-            <Card className="shadow-soft">
+            <Card>
               <CardHeader className="py-3">
                 <CardTitle className="text-sm">{t("recentIssues")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {stats.recentIssues.length === 0 ? (
-                  <p className="text-muted-foreground text-sm italic">
+                  <p className="text-muted-foreground text-sm">
                     {t("noIssues")}
                   </p>
                 ) : (
@@ -274,15 +293,13 @@ export default function DevFlowDashboard() {
                 )}
               </CardContent>
             </Card>
-            <Card className="shadow-soft">
+            <Card>
               <CardHeader className="py-3">
                 <CardTitle className="text-sm">{t("recentPrs")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {stats.recentPrs.length === 0 ? (
-                  <p className="text-muted-foreground text-sm italic">
-                    {t("noPrs")}
-                  </p>
+                  <p className="text-muted-foreground text-sm">{t("noPrs")}</p>
                 ) : (
                   stats.recentPrs.map((pr) => {
                     const stateKey = PR_STATE_KEYS[pr.state];
@@ -312,13 +329,13 @@ export default function DevFlowDashboard() {
                 )}
               </CardContent>
             </Card>
-            <Card className="shadow-soft">
+            <Card>
               <CardHeader className="py-3">
                 <CardTitle className="text-sm">{t("failedRuns")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {stats.recentFailedRuns.length === 0 ? (
-                  <p className="text-muted-foreground text-sm italic">
+                  <p className="text-muted-foreground text-sm">
                     {t("noFailedRuns")}
                   </p>
                 ) : (

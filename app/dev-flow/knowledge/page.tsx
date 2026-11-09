@@ -49,7 +49,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -183,7 +182,7 @@ async function dfPut<T>(path: string, body: unknown): Promise<T> {
 }
 
 export default function DevFlowKnowledgePage() {
-  const { repoId, repo } = useDevFlow();
+  const { repoId } = useDevFlow();
   const t = useTranslations("devFlow.knowledge");
   const tb = useTranslations("devFlow.badges");
   const tc = useTranslations("common");
@@ -215,7 +214,6 @@ export default function DevFlowKnowledgePage() {
   const [testing, setTesting] = useState(false);
 
   const [config, setConfig] = useState<KnowledgeConfig | null>(null);
-  const [configStored, setConfigStored] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
 
   const [indexCounts, setIndexCounts] = useState<Record<
@@ -274,7 +272,6 @@ export default function DevFlowKnowledgePage() {
     let cancelled = false;
     void (async () => {
       setConfig(null);
-      setConfigStored(false);
       setIndexResult(null);
       const [configRes, historyRes, indexRes] = await Promise.allSettled([
         dfGet<{ config: KnowledgeConfig; stored: boolean }>(
@@ -292,7 +289,6 @@ export default function DevFlowKnowledgePage() {
       }
       if (configRes.status === "fulfilled") {
         setConfig(configRes.value.config);
-        setConfigStored(configRes.value.stored);
       }
       setTestHistory(historyRes.status === "fulfilled" ? historyRes.value : []);
       if (indexRes.status === "fulfilled") {
@@ -476,7 +472,6 @@ export default function DevFlowKnowledgePage() {
         stored: boolean;
       }>("/knowledge/config", { repoId, ...config });
       setConfig(result.config);
-      setConfigStored(result.stored);
       notify.success(t("config.saved"));
     } catch (e) {
       notify.error(e instanceof Error ? e.message : String(e));
@@ -538,15 +533,8 @@ export default function DevFlowKnowledgePage() {
     config !== null && config.chunkOverlap >= config.chunkSize;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
-      <PageHeader
-        title={t("title")}
-        description={
-          repo
-            ? t("descriptionRepo", { repo: repo.fullName })
-            : t("descriptionNone")
-        }
-      />
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <PageHeader title={t("title")} />
 
       {!repoId ? (
         <Card className="border-dashed">
@@ -629,103 +617,101 @@ export default function DevFlowKnowledgePage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm">
-                  {t("documents")}{" "}
-                  <Badge variant="secondary" className="ml-1">
-                    {docs.length}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {docsLoading ? (
-                  <div className="space-y-2">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <Skeleton key={i} className="h-12 rounded-lg" />
-                    ))}
-                  </div>
-                ) : docs.length === 0 ? (
-                  <p className="text-muted-foreground py-6 text-center text-sm italic">
-                    {t("noDocuments")}
-                  </p>
-                ) : (
-                  <div className="space-y-1">
-                    {docs.map((doc) => (
-                      <div
-                        key={doc.id}
-                        className="hover:bg-accent/40 flex items-center gap-3 rounded-lg px-3 py-2"
-                      >
-                        <BookOpen className="text-muted-foreground size-4 shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-foreground truncate text-sm font-medium">
-                            {doc.name}
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            {t("docMeta", {
-                              source: isSourceTypeKey(doc.sourceType)
-                                ? tb(
-                                    `sourceType.${SOURCE_TYPE_KEYS[doc.sourceType]}`,
-                                  )
-                                : doc.sourceType.replaceAll("_", " "),
-                              chars: doc.charCount.toLocaleString(),
-                              chunks: doc.chunkCount,
-                              date: format.dateTime(
-                                new Date(doc.createdAt),
-                                "date",
-                              ),
-                            })}
-                          </p>
-                          {doc.errorMessage ? (
-                            <p className="text-destructive mt-0.5 truncate text-xs">
-                              {doc.errorMessage}
-                            </p>
-                          ) : null}
-                        </div>
-                        <DocStatusBadge status={doc.status} />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground shrink-0"
-                          title={t("previewChunks")}
-                          onClick={() => void openChunkPreview(doc)}
+            {docsLoading || docs.length > 0 ? (
+              <Card>
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm">
+                    {t("documents")}{" "}
+                    <Badge variant="secondary" className="ml-1">
+                      {docs.length}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {docsLoading ? (
+                    <div className="space-y-2">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <Skeleton key={i} className="h-12 rounded-lg" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {docs.map((doc) => (
+                        <div
+                          key={doc.id}
+                          className="hover:bg-accent/40 flex items-center gap-3 rounded-lg px-3 py-2"
                         >
-                          <Eye className="size-4" />
-                        </Button>
-                        {doc.status === "failed" ? (
+                          <BookOpen className="text-muted-foreground size-4 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-foreground truncate text-sm font-medium">
+                              {doc.name}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              {t("docMeta", {
+                                source: isSourceTypeKey(doc.sourceType)
+                                  ? tb(
+                                      `sourceType.${SOURCE_TYPE_KEYS[doc.sourceType]}`,
+                                    )
+                                  : doc.sourceType.replaceAll("_", " "),
+                                chars: doc.charCount.toLocaleString(),
+                                chunks: doc.chunkCount,
+                                date: format.dateTime(
+                                  new Date(doc.createdAt),
+                                  "date",
+                                ),
+                              })}
+                            </p>
+                            {doc.errorMessage ? (
+                              <p className="text-destructive mt-0.5 truncate text-xs">
+                                {doc.errorMessage}
+                              </p>
+                            ) : null}
+                          </div>
+                          <DocStatusBadge status={doc.status} />
                           <Button
                             variant="ghost"
                             size="icon"
                             className="text-muted-foreground shrink-0"
-                            title={t("retry")}
-                            disabled={retryingId === doc.id}
-                            onClick={() => void retryDoc(doc)}
+                            title={t("previewChunks")}
+                            onClick={() => void openChunkPreview(doc)}
                           >
-                            <RotateCw
-                              className={
-                                retryingId === doc.id
-                                  ? "size-4 animate-spin"
-                                  : "size-4"
-                              }
-                            />
+                            <Eye className="size-4" />
                           </Button>
-                        ) : null}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground hover:text-destructive shrink-0"
-                          onClick={() => {
-                            setDeleteTarget(doc);
-                          }}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                          {doc.status === "failed" ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-muted-foreground shrink-0"
+                              title={t("retry")}
+                              disabled={retryingId === doc.id}
+                              onClick={() => void retryDoc(doc)}
+                            >
+                              <RotateCw
+                                className={
+                                  retryingId === doc.id
+                                    ? "size-4 animate-spin"
+                                    : "size-4"
+                                }
+                              />
+                            </Button>
+                          ) : null}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive shrink-0"
+                            onClick={() => {
+                              setDeleteTarget(doc);
+                            }}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
           </TabsContent>
 
           <TabsContent value="retrieval" className="mt-4 space-y-4">
@@ -908,7 +894,7 @@ export default function DevFlowKnowledgePage() {
                   <DevFlowMarkdown content={answer} />
                   {citations.length > 0 ? (
                     <div className="space-y-2">
-                      <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                      <p className="text-muted-foreground text-xs font-medium">
                         {t("sources")}
                       </p>
                       {citations.map((citation) => (
@@ -955,14 +941,6 @@ export default function DevFlowKnowledgePage() {
                   </div>
                 ) : (
                   <>
-                    <p className="text-muted-foreground text-xs">
-                      {t("config.description")}
-                    </p>
-                    {!configStored ? (
-                      <p className="text-muted-foreground text-xs italic">
-                        {t("config.notStored")}
-                      </p>
-                    ) : null}
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <Label htmlFor="kb-method">
@@ -978,7 +956,11 @@ export default function DevFlowKnowledgePage() {
                           }}
                         >
                           <SelectTrigger id="kb-method">
-                            <SelectValue />
+                            <SelectValue>
+                              {t(
+                                `config.method.${METHOD_KEYS[config.retrievalMethod]}`,
+                              )}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {RETRIEVAL_METHODS.map((method) => (
@@ -1049,11 +1031,9 @@ export default function DevFlowKnowledgePage() {
                         <p className="text-foreground text-sm font-medium">
                           {t("config.rerank")}
                         </p>
-                        <p className="text-muted-foreground mt-0.5 text-xs">
-                          {t("config.rerankHint")}
-                        </p>
                       </div>
                       <Switch
+                        aria-label={t("config.rerank")}
                         checked={config.rerankEnabled}
                         onCheckedChange={(checked) => {
                           setConfig({ ...config, rerankEnabled: checked });
@@ -1065,12 +1045,10 @@ export default function DevFlowKnowledgePage() {
                         <p className="text-foreground text-sm font-medium">
                           {t("config.scoreThreshold")}
                         </p>
-                        <p className="text-muted-foreground mt-0.5 text-xs">
-                          {t("config.scoreThresholdHint")}
-                        </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <Input
+                          aria-label={t("config.scoreThreshold")}
                           type="number"
                           min={0}
                           max={1}
@@ -1089,6 +1067,7 @@ export default function DevFlowKnowledgePage() {
                           className="h-8 w-20 text-xs"
                         />
                         <Switch
+                          aria-label={t("config.scoreThreshold")}
                           checked={config.scoreThresholdEnabled}
                           onCheckedChange={(checked) => {
                             setConfig({
@@ -1128,9 +1107,6 @@ export default function DevFlowKnowledgePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <p className="text-muted-foreground text-xs">
-                  {t("contentIndex.description")}
-                </p>
                 {indexError ? (
                   <p className="text-destructive text-xs">{indexError}</p>
                 ) : indexCounts ? (
@@ -1224,7 +1200,6 @@ export default function DevFlowKnowledgePage() {
             <DialogTitle>
               {t("chunksTitle", { name: previewDoc?.name ?? "" })}
             </DialogTitle>
-            <DialogDescription>{t("chunksDescription")}</DialogDescription>
           </DialogHeader>
           {previewLoading ? (
             <div className="space-y-2 py-2">
@@ -1279,7 +1254,6 @@ export default function DevFlowKnowledgePage() {
               <Label htmlFor="note-title">{t("noteTitleLabel")}</Label>
               <Input
                 id="note-title"
-                placeholder={t("noteTitlePlaceholder")}
                 value={noteTitle}
                 onChange={(e) => {
                   setNoteTitle(e.target.value);

@@ -1,7 +1,7 @@
 "use client";
+
 import type { A2uiClientAction } from "@a2ui/web_core/v0_9";
 import { BookSearch, LifeBuoy, Search, Snowflake } from "lucide-react";
-import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 
 import type { ChatMessage, Mode } from "@/hooks/use-chat";
@@ -38,54 +38,18 @@ export default function ChatContainer({
 }: ChatContainerProps) {
   const t = useTranslations("chat");
   const centered = messages.length === 0;
+
   return (
     <div
-      className={`relative flex flex-1 flex-col overflow-hidden ${
-        centered ? "items-center justify-center" : ""
-      }`}
+      className={`relative flex min-h-0 flex-1 flex-col ${centered ? "justify-center overflow-y-auto" : "overflow-hidden"}`}
     >
       {centered ? (
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{
-            y: { type: "spring", visualDuration: 0.55, bounce: 0.18 },
-            opacity: { duration: 0.35, ease: "easeOut" },
-          }}
-          className="flex w-full max-w-xl flex-col items-center px-6 pb-6 text-center"
-        >
-          <div className="relative flex items-center justify-center">
-            <span className="bg-primary/20 absolute -inset-5 rounded-full blur-2xl" />
-            <span className="from-primary to-chart-2 text-primary-foreground shadow-lift ring-primary/25 relative flex size-16 items-center justify-center rounded-[1.4rem] bg-linear-to-br ring-1">
-              <Snowflake className="size-8" strokeWidth={1.5} />
-            </span>
-          </div>
-          <h1 className="text-foreground mt-7 text-[1.7rem] leading-tight font-semibold tracking-tight text-balance sm:text-3xl">
+        <div className="mx-auto w-full max-w-3xl px-4 pt-8 pb-7 sm:px-6">
+          <Snowflake className="text-primary mb-6 size-9" strokeWidth={1.4} />
+          <h1 className="text-foreground text-3xl leading-tight font-semibold tracking-tight text-balance sm:text-4xl">
             {t("greeting")}
           </h1>
-          <p className="text-muted-foreground mt-3 max-w-md text-sm leading-relaxed text-pretty">
-            {t("heroSubtitle")}
-          </p>
-          <div className="mt-8 flex w-full flex-col gap-2">
-            {SUGGESTION_KEYS.map(({ key, icon: Icon }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => {
-                  onSend(t(key));
-                }}
-                className="group border-border/70 bg-card/70 hover:border-primary/40 hover:bg-card shadow-soft hover:shadow-lift flex w-full cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 text-left backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5"
-              >
-                <span className="bg-primary/10 text-primary ring-primary/15 group-hover:bg-primary/15 flex size-8 shrink-0 items-center justify-center rounded-lg ring-1 transition-colors">
-                  <Icon className="size-4" strokeWidth={1.75} />
-                </span>
-                <span className="text-foreground/85 min-w-0 flex-1 text-[13px] leading-snug">
-                  {t(key)}
-                </span>
-              </button>
-            ))}
-          </div>
-        </motion.div>
+        </div>
       ) : (
         <MessageList
           messages={messages}
@@ -94,15 +58,7 @@ export default function ChatContainer({
           onA2uiAction={onA2uiAction}
         />
       )}
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{
-          y: { type: "spring", visualDuration: 0.5, bounce: 0.15 },
-          opacity: { duration: 0.3, ease: "easeOut" },
-        }}
-        className="w-full px-4 pb-5 sm:px-6"
-      >
+      <div className="w-full shrink-0 px-4 pb-5 sm:px-6">
         <div className="mx-auto w-full max-w-3xl">
           <ChatInput
             isStreaming={isStreaming}
@@ -111,8 +67,29 @@ export default function ChatContainer({
             onSend={onSend}
             onUpload={onUpload}
           />
+          {centered ? (
+            <div className="mt-4 grid gap-2 pb-12 sm:grid-cols-3">
+              {SUGGESTION_KEYS.map(({ key, icon: Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  disabled={isStreaming}
+                  onClick={() => {
+                    onSend(t(key));
+                  }}
+                  className="border-border text-muted-foreground hover:border-primary/40 hover:bg-card hover:text-foreground focus-visible:ring-ring flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-3 text-left text-xs leading-relaxed transition-colors outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50"
+                >
+                  <Icon
+                    className="text-primary mt-0.5 size-4 shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <span>{t(key)}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

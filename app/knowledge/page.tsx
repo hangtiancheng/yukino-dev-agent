@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -259,13 +259,13 @@ export default function KnowledgePage() {
 
   return (
     <div className="text-foreground min-h-svh">
-      <header className="bg-background/70 border-border/60 sticky top-0 z-20 border-b backdrop-blur-xl">
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-2 px-4">
+      <header className="bg-card sticky top-0 z-20 border-b">
+        <div className="mx-auto flex h-16 w-full max-w-5xl items-center gap-2 px-4">
           <Link
             href="/"
             className="flex shrink-0 items-center gap-2.5 rounded-lg pr-2 transition-opacity hover:opacity-80"
           >
-            <span className="from-primary to-chart-2 text-primary-foreground shadow-soft ring-primary/25 flex size-8 items-center justify-center rounded-lg bg-linear-to-br ring-1">
+            <span className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
               <Snowflake className="size-4" strokeWidth={1.75} />
             </span>
             <span className="text-foreground hidden text-sm font-semibold tracking-tight sm:block">
@@ -291,6 +291,7 @@ export default function KnowledgePage() {
                   )}
                 >
                   <link.icon className="size-4" />
+                  <span className="sr-only md:hidden">{tn(link.labelKey)}</span>
                   <span className="hidden md:block">{tn(link.labelKey)}</span>
                 </Link>
               );
@@ -302,16 +303,13 @@ export default function KnowledgePage() {
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl px-4 py-8">
-        <div className="mb-6 flex items-start justify-between gap-4">
+      <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
+        <div className="mb-6 flex items-center justify-between gap-4 border-b pb-5">
           <div>
             <h1 className="text-foreground flex items-center gap-2 text-2xl font-semibold tracking-tight">
               <BookOpen className="text-primary size-5" />
               {t("title")}
             </h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {t("subtitle")}
-            </p>
           </div>
           <div className="shrink-0">
             <input
@@ -330,7 +328,7 @@ export default function KnowledgePage() {
             <Button
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              className="from-primary to-chart-2 shadow-soft bg-linear-to-br"
+              className="bg-primary"
             >
               <span className="flex items-center gap-1.5">
                 <Upload className="size-3.5" />
@@ -341,12 +339,16 @@ export default function KnowledgePage() {
         </div>
 
         <Card className="mb-4">
-          <CardContent className="flex items-center gap-3 py-3">
+          <CardContent className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
-              <label className="text-muted-foreground mb-1 block text-xs">
+              <label
+                className="text-foreground mb-2 block text-sm font-medium"
+                htmlFor="knowledge-admin-token"
+              >
                 {t("adminToken")}
               </label>
               <Input
+                id="knowledge-admin-token"
                 type="password"
                 value={adminToken}
                 onChange={(e) => {
@@ -358,14 +360,8 @@ export default function KnowledgePage() {
             </div>
           </CardContent>
         </Card>
-        <p className="text-muted-foreground mb-4 text-xs">
-          {t("adminTokenHint")}
-        </p>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">{t("title")}</CardTitle>
-          </CardHeader>
           <CardContent>
             {loading ? (
               <div className="flex justify-center py-8">

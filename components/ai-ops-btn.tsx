@@ -98,14 +98,12 @@ export default function AIOpsBtn({ onClick, disabled }: AIOpsButtonProps) {
 
   return (
     <div
-      className={cn(
-        "z-10 select-none",
-        pos ? "fixed" : "absolute top-4 left-1/2 -translate-x-1/2",
-      )}
+      className={cn("z-10 select-none", pos ? "fixed" : "relative")}
       style={pos ? { left: pos.x, top: pos.y } : undefined}
     >
       <Button
-        size="lg"
+        size="sm"
+        variant="outline"
         onClick={handleClick}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -125,10 +123,7 @@ export default function AIOpsBtn({ onClick, disabled }: AIOpsButtonProps) {
             className="cursor-grab touch-none active:cursor-grabbing"
           />
         }
-        className={cn(
-          "from-primary to-chart-2 shadow-lift rounded-full bg-linear-to-br px-4",
-          disabled && "opacity-50",
-        )}
+        className={cn("rounded-lg px-3", disabled && "opacity-50")}
       >
         <Layers data-icon="inline-start" />
         <span>AI Ops</span>

@@ -207,10 +207,10 @@ export default function DevFlowDraftsPage() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 p-6">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <PageHeader
         title={t("title")}
-        description={t("description")}
+
         actions={
           <Button
             variant="outline"

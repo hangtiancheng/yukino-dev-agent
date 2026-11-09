@@ -39,7 +39,6 @@ import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -234,7 +233,7 @@ function parseErrorFrame(dataText: string): {
 }
 
 export default function DevFlowChatPage() {
-  const { repoId, repo } = useDevFlow();
+  const { repoId } = useDevFlow();
   const t = useTranslations("devFlow.agentChat");
   const format = useFormatter();
   const tc = useTranslations("common");
@@ -793,7 +792,7 @@ export default function DevFlowChatPage() {
 
   return (
     <div className="flex h-full min-h-0 w-full">
-      <aside className="border-border bg-card/40 hidden w-64 shrink-0 flex-col border-r md:flex">
+      <aside className="border-border bg-background hidden w-56 shrink-0 flex-col border-r md:flex">
         <div className="flex items-center justify-between gap-2 border-b p-3">
           <span className="text-sm font-medium">{t("conversations")}</span>
           <Button
@@ -846,7 +845,7 @@ export default function DevFlowChatPage() {
                     onClick={() =>
                       void handleDeleteConversation(conversation.id)
                     }
-                    className="text-muted-foreground hover:text-destructive opacity-0 transition-opacity group-hover:opacity-100"
+                    className="text-muted-foreground hover:text-destructive opacity-100 transition-opacity focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
                     aria-label={t("deleteConversation")}
                   >
                     <Trash2 className="size-3.5" />
@@ -858,14 +857,9 @@ export default function DevFlowChatPage() {
         </div>
       </aside>
 
-      <div className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col gap-4 p-6">
+      <div className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col gap-4 p-4 sm:p-6">
         <PageHeader
           title={t("title")}
-          description={
-            repo
-              ? t("descriptionRepo", { repo: repo.fullName })
-              : t("descriptionNone")
-          }
           actions={
             <div className="flex items-center gap-2">
               <Button
@@ -923,7 +917,7 @@ export default function DevFlowChatPage() {
                 )}
                 {memory?.thread && memory.thread.decisions.length > 0 ? (
                   <div className="mt-2">
-                    <span className="text-muted-foreground text-[10px] font-medium uppercase">
+                    <span className="text-muted-foreground text-xs font-medium">
                       {t("memoryDecisions")}
                     </span>
                     <ul className="mt-1 space-y-0.5">
@@ -937,7 +931,7 @@ export default function DevFlowChatPage() {
                 ) : null}
                 {memory?.thread && memory.thread.facts.length > 0 ? (
                   <div className="mt-2">
-                    <span className="text-muted-foreground text-[10px] font-medium uppercase">
+                    <span className="text-muted-foreground text-xs font-medium">
                       {t("memoryFacts")}
                     </span>
                     <ul className="mt-1 space-y-0.5">
@@ -1121,18 +1115,10 @@ export default function DevFlowChatPage() {
               <Spinner className="size-5" />
             </div>
           ) : turns.length === 0 ? (
-            <Card className="border-dashed">
+            <Card className="border-transparent bg-transparent shadow-none">
               <div className="flex flex-col items-center gap-3 py-12 text-center">
-                <div className="from-primary/12 to-chart-2/20 text-primary ring-primary/10 flex size-12 items-center justify-center rounded-xl bg-linear-to-br ring-1">
+                <div className="bg-primary/8 text-primary flex size-12 items-center justify-center rounded-xl ring-1">
                   <Bot className="size-6" />
-                </div>
-                <div>
-                  <p className="text-foreground text-sm font-medium">
-                    {t("askAnything")}
-                  </p>
-                  <p className="text-muted-foreground mt-1 max-w-md text-xs">
-                    {t("askAnythingDescription")}
-                  </p>
                 </div>
                 <div className="flex max-w-xl flex-wrap justify-center gap-1.5">
                   {(suggestions ?? samples).map((sample) => (
@@ -1143,7 +1129,7 @@ export default function DevFlowChatPage() {
                         setSuggestionsReloadKey((k) => k + 1);
                       }}
                       disabled={!repoId}
-                      className="border-border bg-background text-muted-foreground hover:bg-accent/60 hover:text-foreground hover:border-primary/40 shadow-soft rounded-full border px-3 py-1.5 text-xs transition-colors disabled:opacity-50"
+                      className="border-border bg-background text-muted-foreground hover:bg-accent/60 hover:text-foreground hover:border-primary/40 rounded-lg border px-3 py-1.5 text-xs transition-colors disabled:opacity-50"
                     >
                       {sample}
                     </button>
@@ -1161,7 +1147,7 @@ export default function DevFlowChatPage() {
                 )}
               >
                 {turn.role === "assistant" ? (
-                  <div className="from-primary/12 to-chart-2/20 text-primary ring-primary/10 mt-1 flex size-7 shrink-0 items-center justify-center rounded-lg bg-linear-to-br ring-1">
+                  <div className="bg-primary/8 text-primary mt-1 flex size-7 shrink-0 items-center justify-center rounded-lg ring-1">
                     <Sparkles className="size-4" />
                   </div>
                 ) : null}
@@ -1249,7 +1235,11 @@ export default function DevFlowChatPage() {
               setInput(e.target.value);
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
+              if (
+                e.key === "Enter" &&
+                !e.shiftKey &&
+                !e.nativeEvent.isComposing
+              ) {
                 e.preventDefault();
                 void send(input);
               }
@@ -1285,7 +1275,6 @@ export default function DevFlowChatPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("whatWentWrong")}</DialogTitle>
-            <DialogDescription>{t("feedbackDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <Select
@@ -1297,7 +1286,7 @@ export default function DevFlowChatPage() {
               }}
             >
               <SelectTrigger aria-label={t("reasonLabel")}>
-                <SelectValue />
+                <SelectValue>{t(`reason.${REASON_KEYS[reason]}`)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {REASON_VALUES.map((value) => (

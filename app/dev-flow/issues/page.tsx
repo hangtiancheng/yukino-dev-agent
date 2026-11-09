@@ -49,7 +49,7 @@ interface SimilarIssueHit {
 }
 
 export default function DevFlowIssuesPage() {
-  const { repoId, repo } = useDevFlow();
+  const { repoId } = useDevFlow();
   const t = useTranslations("devFlow.issues");
   const tc = useTranslations("common");
   const [issues, setIssues] = useState<IssueSummary[]>([]);
@@ -220,14 +220,9 @@ export default function DevFlowIssuesPage() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 p-6">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <PageHeader
         title={t("title")}
-        description={
-          repo
-            ? t("descriptionRepo", { repo: repo.fullName })
-            : t("descriptionNone")
-        }
         actions={
           <Button
             variant="outline"
@@ -411,14 +406,12 @@ export default function DevFlowIssuesPage() {
                       ))}
                     </div>
                   ) : null}
-                  <Separator />
                   {selected.body ? (
-                    <DevFlowMarkdown content={selected.body} />
-                  ) : (
-                    <p className="text-muted-foreground text-sm italic">
-                      {t("noDescription")}
-                    </p>
-                  )}
+                    <>
+                      <Separator />
+                      <DevFlowMarkdown content={selected.body} />
+                    </>
+                  ) : null}
                 </CardContent>
               </Card>
 
@@ -533,19 +526,7 @@ export default function DevFlowIssuesPage() {
                     ) : null}
                   </div>
                 </>
-              ) : (
-                <Card className="border-dashed">
-                  <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
-                    <Sparkles className="text-muted-foreground size-6" />
-                    <p className="text-foreground text-sm font-medium">
-                      {t("noAnalysis")}
-                    </p>
-                    <p className="text-muted-foreground max-w-sm text-xs">
-                      {t("noAnalysisDescription")}
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+              ) : null}
             </>
           )}
         </div>

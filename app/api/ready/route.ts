@@ -105,6 +105,9 @@ export async function GET() {
     return { ok: res.ok, detail: `HTTP ${res.status}` };
   });
   const mcp = await check("mcp", async () => {
+    if (config.mcpUrl === "") {
+      return { ok: true, detail: t("readinessUnconfigured") };
+    }
     const res = await fetch(config.mcpUrl, {
       signal: AbortSignal.timeout(3000),
     });

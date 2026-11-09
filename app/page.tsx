@@ -14,11 +14,10 @@ import { OncallSettings } from "@/components/oncall-settings";
 import Sidebar from "@/components/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import { SidebarProvider } from "@/components/ui/sidebar";
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { useChat } from "@/hooks/use-chat";
 
 export default function Home() {
@@ -74,54 +73,53 @@ export default function Home() {
 
   return (
     <SidebarProvider className="h-svh overflow-hidden">
-      <ResizablePanelGroup orientation="horizontal" className="h-full">
-        <ResizablePanel defaultSize={220} minSize={160} maxSize={420}>
-          <Sidebar
-            histories={histories}
-            activeId={sessionId}
-            onNewChat={newChat}
-            onLoad={loadChatHistory}
-            onDelete={deleteChatHistory}
-          />
-        </ResizablePanel>
-        <ResizableHandle className="hover:bg-primary/40 active:bg-primary/60" />
-        <ResizablePanel minSize={360}>
-          <main className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-            <div className="absolute top-4 right-4 z-10 flex items-center gap-1.5">
-              <OncallSettings />
-              <ThemeToggle className="bg-card/80 border-border/60 shadow-soft backdrop-blur-xl" />
-              <LanguageSwitcher className="bg-card/80 border-border/60 shadow-soft backdrop-blur-xl" />
-            </div>
+      <Sidebar
+        histories={histories}
+        activeId={sessionId}
+        onNewChat={newChat}
+        onLoad={loadChatHistory}
+        onDelete={deleteChatHistory}
+      />
+      <SidebarInset className="h-svh min-w-0 flex-1 overflow-hidden">
+        <header className="bg-card flex h-16 shrink-0 items-center gap-3 border-b px-4 sm:px-6">
+          <SidebarTrigger />
+          <span className="text-muted-foreground text-sm">OnCall</span>
+          <div className="ml-auto flex items-center gap-1.5">
             <AIOpsBtn
               onClick={() => {
                 void handleAIOps();
               }}
               disabled={isStreaming}
             />
-            <ChatContainer
-              messages={messages}
-              isStreaming={isStreaming}
-              sessionId={sessionId}
-              mode={mode}
-              onModeChange={setMode}
-              onSend={(text) => {
-                void sendMessage(text);
-              }}
-              onA2uiAction={(messageIndex, action) => {
-                void sendA2uiAction(messageIndex, action);
-              }}
-              onUpload={(file) => {
-                void handleUpload(file);
-              }}
-            />
-            <ActiveAlertsPanel
-              disabled={isStreaming}
-              onReport={handlePanelReport}
-              onNotify={showNotification}
-            />
-          </main>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+            <OncallSettings />
+            <ThemeToggle />
+            <LanguageSwitcher />
+          </div>
+        </header>
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          <ChatContainer
+            messages={messages}
+            isStreaming={isStreaming}
+            sessionId={sessionId}
+            mode={mode}
+            onModeChange={setMode}
+            onSend={(text) => {
+              void sendMessage(text);
+            }}
+            onA2uiAction={(messageIndex, action) => {
+              void sendA2uiAction(messageIndex, action);
+            }}
+            onUpload={(file) => {
+              void handleUpload(file);
+            }}
+          />
+          <ActiveAlertsPanel
+            disabled={isStreaming}
+            onReport={handlePanelReport}
+            onNotify={showNotification}
+          />
+        </div>
+      </SidebarInset>
       <LoadingOverlay overlay={overlay} />
     </SidebarProvider>
   );

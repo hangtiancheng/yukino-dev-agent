@@ -205,8 +205,10 @@ function referenceStageTrace(
 function References({ references }: { references: ChatReference[] }) {
   const t = useTranslations("chat");
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-      <span className="text-muted-foreground text-xs">{t("sources")}</span>
+    <div
+      aria-label={t("sources")}
+      className="mt-2 flex flex-wrap items-center gap-1.5"
+    >
       {references.map((ref, i) => (
         <Badge
           key={`${ref.source}-${i}`}
@@ -315,7 +317,7 @@ const MessageItem = memo(function MessageItem({
     return (
       <Message align="end">
         <Bubble align="end" variant="default" className="max-w-[80%]">
-          <BubbleContent className="from-primary to-chart-2 shadow-soft rounded-2xl rounded-br-sm bg-linear-to-br whitespace-pre-wrap">
+          <BubbleContent className="bg-primary rounded-2xl rounded-br-sm whitespace-pre-wrap">
             {message.content}
           </BubbleContent>
         </Bubble>
@@ -324,7 +326,7 @@ const MessageItem = memo(function MessageItem({
   }
   return (
     <Message>
-      <MessageAvatar className="from-primary to-chart-4 text-primary-foreground shadow-soft ring-primary/20 size-8 self-start bg-linear-to-br ring-1">
+      <MessageAvatar className="bg-primary/10 text-primary size-8 self-start ring-1">
         <Sparkles className="size-4" />
       </MessageAvatar>
       <MessageContent>

@@ -408,7 +408,7 @@ export default function ActiveAlertsPanel({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="bg-card/85 border-border/60 shadow-lift pointer-events-auto flex max-h-[70svh] w-96 flex-col overflow-hidden rounded-2xl border backdrop-blur-xl"
+          className="bg-card border-border shadow-lift pointer-events-auto flex max-h-[70svh] w-[min(26rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border"
         >
           <div className="border-b px-3 py-2">
             <div className="flex items-center justify-between">
@@ -613,7 +613,7 @@ export default function ActiveAlertsPanel({
                           <>
                             {runDetail.events.length > 0 && (
                               <div className="mb-3">
-                                <div className="text-muted-foreground mb-1.5 text-[11px] font-medium tracking-wide uppercase">
+                                <div className="text-muted-foreground mb-1.5 text-xs font-medium">
                                   {t("runTimeline")}
                                 </div>
                                 <div className="flex flex-col gap-1.5">

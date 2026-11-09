@@ -26,7 +26,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -80,7 +79,7 @@ const FILE_STATUS_KEYS: Record<
 };
 
 export default function DevFlowPullsPage() {
-  const { repoId, repo } = useDevFlow();
+  const { repoId } = useDevFlow();
   const t = useTranslations("devFlow.pulls");
   const tc = useTranslations("common");
   const tf = useTranslations("devFlow.badges.fileStatus");
@@ -234,7 +233,6 @@ export default function DevFlowPullsPage() {
         ? `${t("testSuggestionsLabel")}\n${review.test_suggestions.map((s) => `- ${s}`).join("\n")}`
         : "",
       "",
-      t("generatedNote"),
     ]
       .filter((line) => line !== "")
       .join("\n");
@@ -255,14 +253,9 @@ export default function DevFlowPullsPage() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 p-6">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <PageHeader
         title={t("title")}
-        description={
-          repo
-            ? t("descriptionRepo", { repo: repo.fullName })
-            : t("descriptionNone")
-        }
         actions={
           <Button
             variant="outline"
@@ -513,19 +506,7 @@ export default function DevFlowPullsPage() {
                     {t("draftReviewComment")}
                   </Button>
                 </>
-              ) : (
-                <Card className="border-dashed">
-                  <CardContent className="flex flex-col items-center gap-2 py-10 text-center">
-                    <Sparkles className="text-muted-foreground size-6" />
-                    <p className="text-foreground text-sm font-medium">
-                      {t("noReview")}
-                    </p>
-                    <p className="text-muted-foreground max-w-sm text-xs">
-                      {t("noReviewDescription")}
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+              ) : null}
             </>
           )}
         </div>
@@ -541,12 +522,10 @@ export default function DevFlowPullsPage() {
       >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{t("checklist.dialogTitle")}</DialogTitle>
-            <DialogDescription>
-              {selected
-                ? t("checklist.dialogDescription", { number: selected.number })
-                : t("checklist.dialogDescriptionGeneric")}
-            </DialogDescription>
+            <DialogTitle>
+              {t("checklist.dialogTitle")}
+              {selected ? ` #${selected.number}` : ""}
+            </DialogTitle>
           </DialogHeader>
           {checklistLoading ? (
             <div className="flex justify-center py-10">
@@ -567,7 +546,7 @@ export default function DevFlowPullsPage() {
                 </Badge>
               </div>
               <div className="space-y-2">
-                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                <p className="text-muted-foreground text-xs font-medium">
                   {t("checklist.findings")}
                 </p>
                 {checklist.findings.length === 0 ? (
@@ -606,7 +585,7 @@ export default function DevFlowPullsPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                <p className="text-muted-foreground text-xs font-medium">
                   {t("checklist.actions")}
                 </p>
                 <ol className="space-y-1.5">

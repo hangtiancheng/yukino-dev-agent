@@ -31,12 +31,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -158,7 +157,6 @@ function ConnectDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("connect.title")}</DialogTitle>
-          <DialogDescription>{t("connect.description")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <Field>
@@ -171,8 +169,12 @@ function ConnectDialog({
                 }
               }}
             >
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger aria-label={t("connect.mode")}>
+                <SelectValue>
+                  {mode === "local"
+                    ? t("connect.modeLocal")
+                    : t("connect.modeGithub")}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="github">
@@ -187,7 +189,6 @@ function ConnectDialog({
               <FieldLabel htmlFor="df-local-path">
                 {t("connect.localPath")}
               </FieldLabel>
-              <FieldDescription>{t("connect.localHint")}</FieldDescription>
               <Input
                 id="df-local-path"
                 placeholder={t("connect.localPathPlaceholder")}
@@ -206,7 +207,6 @@ function ConnectDialog({
                   </FieldLabel>
                   <Input
                     id="df-owner"
-                    placeholder={t("connect.ownerPlaceholder")}
                     value={owner}
                     onChange={(e) => {
                       setOwner(e.target.value);
@@ -219,7 +219,6 @@ function ConnectDialog({
                   </FieldLabel>
                   <Input
                     id="df-repo"
-                    placeholder={t("connect.repositoryPlaceholder")}
                     value={repo}
                     onChange={(e) => {
                       setRepo(e.target.value);
@@ -237,8 +236,12 @@ function ConnectDialog({
                     }
                   }}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger aria-label={t("connect.provider")}>
+                    <SelectValue>
+                      {provider === "github"
+                        ? t("connect.providerGithub")
+                        : t("connect.providerCompatible")}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="github">
@@ -272,9 +275,6 @@ function ConnectDialog({
                     {t("connect.optional")}
                   </span>
                 </FieldLabel>
-                <FieldDescription>
-                  {t("connect.cloneParentDirHint")}
-                </FieldDescription>
                 <Input
                   id="df-clone-parent"
                   placeholder={t("connect.cloneParentDirPlaceholder")}
@@ -288,16 +288,11 @@ function ConnectDialog({
           )}
           <Field>
             <FieldLabel htmlFor="df-token">
-              {t("connect.accessToken")}{" "}
-              <span className="text-muted-foreground">
-                {t("connect.optional")}
-              </span>
+              {t("connect.accessToken")}
             </FieldLabel>
-            <FieldDescription>{t("connect.tokenDescription")}</FieldDescription>
             <Input
               id="df-token"
               type="password"
-              placeholder={t("connect.tokenPlaceholder")}
               value={token}
               onChange={(e) => {
                 setToken(e.target.value);
@@ -381,10 +376,10 @@ export default function DevFlowReposPage() {
   }, [deleteTarget, refreshRepos, t]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <PageHeader
         title={t("title")}
-        description={t("description")}
+
         actions={
           <Button
             onClick={() => {
@@ -408,9 +403,6 @@ export default function DevFlowReposPage() {
           <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
             <FolderGit2 className="text-muted-foreground size-8" />
             <p className="text-foreground font-medium">{t("noRepos")}</p>
-            <p className="text-muted-foreground max-w-sm text-sm">
-              {t("noReposDescription")}
-            </p>
             <Button
               onClick={() => {
                 setConnectOpen(true);

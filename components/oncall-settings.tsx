@@ -447,16 +447,16 @@ export function OncallSettings() {
           <Button
             size="icon"
             variant="outline"
-            className="bg-card/80 border-border/60 shadow-soft backdrop-blur-xl"
+
             title={t("title")}
           >
             <Settings2 className="size-4" />
           </Button>
         }
       />
-      <DialogContent className="max-h-[80svh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[85svh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-sm">{t("title")}</DialogTitle>
+          <DialogTitle className="text-lg">{t("title")}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-1.5">
           <label
@@ -472,12 +472,8 @@ export function OncallSettings() {
             onChange={(e) => {
               persistToken(e.target.value);
             }}
-            placeholder={t("adminTokenPlaceholder")}
             className="h-8 text-xs"
           />
-          <p className="text-muted-foreground text-[11px]">
-            {t("adminTokenHint")}
-          </p>
         </div>
         <Tabs
           value={tab}

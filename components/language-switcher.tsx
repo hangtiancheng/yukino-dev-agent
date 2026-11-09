@@ -43,9 +43,11 @@ export function LanguageSwitcher({ className }: { className?: string }) {
       >
         <Languages className="text-muted-foreground size-4" />
         <SelectValue>
-          {(value: Locale | null) =>
-            value !== null ? LOCALE_LABELS[value] : ""
-          }
+          {(value: Locale | null) => (
+            <span className="sr-only sm:not-sr-only">
+              {value !== null ? LOCALE_LABELS[value] : ""}
+            </span>
+          )}
         </SelectValue>
       </SelectTrigger>
       <SelectContent align="end">

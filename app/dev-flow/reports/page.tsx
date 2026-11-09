@@ -34,7 +34,7 @@ interface WeeklyReport {
 }
 
 export default function DevFlowReportsPage() {
-  const { repoId, repo } = useDevFlow();
+  const { repoId } = useDevFlow();
   const t = useTranslations("devFlow.reports");
   const [startDate, setStartDate] = useState(isoDaysAgo(7));
   const [endDate, setEndDate] = useState(isoDaysAgo(0));
@@ -67,15 +67,8 @@ export default function DevFlowReportsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <PageHeader
-        title={t("title")}
-        description={
-          repo
-            ? t("descriptionRepo", { repo: repo.fullName })
-            : t("descriptionNone")
-        }
-      />
+    <div className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <PageHeader title={t("title")} />
 
       <Card>
         <CardContent className="flex flex-wrap items-end gap-4 pt-5">
@@ -162,19 +155,7 @@ export default function DevFlowReportsPage() {
             </CardContent>
           </Card>
         </>
-      ) : (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center gap-2 py-14 text-center">
-            <FileText className="text-muted-foreground size-8" />
-            <p className="text-foreground text-sm font-medium">
-              {t("noReport")}
-            </p>
-            <p className="text-muted-foreground max-w-sm text-xs">
-              {t("noReportDescription")}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      ) : null}
     </div>
   );
 }

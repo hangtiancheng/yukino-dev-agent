@@ -336,10 +336,10 @@ export default function DevFlowGraphPage() {
   const showEdgeLabels = (subgraph?.edges.length ?? 0) <= 8;
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <PageHeader
         title={t("title")}
-        description={t("description")}
+
         actions={
           <Button
             onClick={() => void rebuild()}
@@ -478,7 +478,11 @@ export default function DevFlowGraphPage() {
 
             <Card className="min-w-0">
               <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm">{t("selectNodeHint")}</CardTitle>
+                <CardTitle className="text-sm">
+                  {selected
+                    ? labelByKey.get(keyOf(selected.type, selected.id))
+                    : t("selectNodeHint")}
+                </CardTitle>
                 <div className="flex items-center gap-1.5">
                   <span className="text-muted-foreground text-xs">
                     {t("depth")}
@@ -501,11 +505,6 @@ export default function DevFlowGraphPage() {
               <CardContent className="space-y-3">
                 {subLoading && !subgraph ? (
                   <Skeleton className="h-[420px] w-full" />
-                ) : null}
-                {!selected ? (
-                  <p className="text-muted-foreground py-20 text-center text-sm">
-                    {t("selectNodeHint")}
-                  </p>
                 ) : null}
                 {subgraph && selected ? (
                   <>

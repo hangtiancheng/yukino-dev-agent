@@ -20,12 +20,6 @@ import { dfGet, dfPost, useDevFlow } from "@/components/dev-flow/provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
@@ -281,15 +275,8 @@ export default function DevFlowCodePage() {
   const indexStatusValue = indexState?.status ?? "idle";
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
-      <PageHeader
-        title={t("title")}
-        description={
-          repo
-            ? t("descriptionRepo", { repo: repo.fullName })
-            : t("descriptionNone")
-        }
-      />
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <PageHeader title={t("title")} />
 
       {statusLoading ? (
         <div className="grid gap-4 md:grid-cols-2">
@@ -430,15 +417,7 @@ export default function DevFlowCodePage() {
         </div>
       )}
 
-      {!cloned ? (
-        <Empty className="border-border rounded-xl border border-dashed py-16">
-          <EmptyMedia variant="icon">
-            <FolderGit2 />
-          </EmptyMedia>
-          <EmptyTitle>{t("noCheckoutTitle")}</EmptyTitle>
-          <EmptyDescription>{t("noCheckoutDescription")}</EmptyDescription>
-        </Empty>
-      ) : (
+      {cloned ? (
         <>
           <Tabs
             value={tab}
@@ -641,7 +620,7 @@ export default function DevFlowCodePage() {
             </Card>
           )}
         </>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -17,12 +17,7 @@ import { dfGet, dfPost, useDevFlow } from "@/components/dev-flow/provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Empty, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
@@ -104,7 +99,7 @@ function linesLabel(row: SymbolRow): string {
 }
 
 export default function DevFlowCodeGraphPage() {
-  const { repoId, repo } = useDevFlow();
+  const { repoId } = useDevFlow();
   const t = useTranslations("devFlow.codeGraph");
   const tCode = useTranslations("devFlow.code");
 
@@ -267,15 +262,8 @@ export default function DevFlowCodeGraphPage() {
   const cloned = workspace?.cloned ?? false;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
-      <PageHeader
-        title={t("title")}
-        description={
-          repo
-            ? t("descriptionRepo", { repo: repo.fullName })
-            : t("descriptionNone")
-        }
-      />
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <PageHeader title={t("title")} />
 
       {statusLoading ? (
         <Skeleton className="h-28 rounded-xl" />
@@ -430,13 +418,12 @@ export default function DevFlowCodeGraphPage() {
               <Network />
             </EmptyMedia>
             <EmptyTitle>{t("emptyTitle")}</EmptyTitle>
-            <EmptyDescription>{t("emptyDescription")}</EmptyDescription>
           </Empty>
         )}
 
         {relations.length > 0 ? (
           <div className="mt-5 space-y-2">
-            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <p className="text-muted-foreground text-xs font-medium">
               {t("relationsTitle", { count: relations.length })}
             </p>
             <div className="border-border bg-card overflow-hidden rounded-lg border">
@@ -481,7 +468,7 @@ export default function DevFlowCodeGraphPage() {
 
         {documents.length > 0 ? (
           <div className="mt-5 space-y-2">
-            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <p className="text-muted-foreground text-xs font-medium">
               {t("documentsTitle", { count: documents.length })}
             </p>
             <div className="space-y-2">
@@ -517,9 +504,6 @@ export default function DevFlowCodeGraphPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-muted-foreground text-xs">
-            {t("impactDescription")}
-          </p>
           <div className="flex gap-2">
             <Input
               placeholder={t("impactPlaceholder")}

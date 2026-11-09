@@ -173,7 +173,7 @@ interface LiveTaskState {
 }
 
 export default function DevFlowWorkflowRunsPage() {
-  const { repoId, repo } = useDevFlow();
+  const { repoId } = useDevFlow();
   const t = useTranslations("devFlow.workflowRuns");
   const format = useFormatter();
 
@@ -481,14 +481,9 @@ export default function DevFlowWorkflowRunsPage() {
   const busy = planning || executing;
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <PageHeader
         title={t("title")}
-        description={
-          repo
-            ? t("descriptionRepo", { repo: repo.fullName })
-            : t("descriptionNone")
-        }
         actions={
           <Button
             variant="outline"

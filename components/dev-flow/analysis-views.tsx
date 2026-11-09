@@ -67,7 +67,7 @@ function SectionTitle({
   children: React.ReactNode;
 }) {
   return (
-    <div className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
+    <div className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
       <Icon className="size-3.5" />
       {children}
     </div>

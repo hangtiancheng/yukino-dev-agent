@@ -1,14 +1,8 @@
 "use client";
-import { MoreHorizontal, Paperclip, Send } from "lucide-react";
+import { ArrowUp, Paperclip } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   InputGroup,
   InputGroupAddon,
@@ -58,7 +52,7 @@ export default function ChatInput({
   };
 
   return (
-    <InputGroup className="bg-card/85 shadow-soft focus-within:shadow-lift border-border/60 rounded-3xl p-2 backdrop-blur-xl transition-all duration-300">
+    <InputGroup className="bg-card shadow-soft border-border focus-within:border-primary/50 rounded-2xl p-2 transition-colors">
       <InputGroupTextarea
         ref={textareaRef}
         value={text}
@@ -66,36 +60,28 @@ export default function ChatInput({
           setText(e.target.value);
         }}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
             e.preventDefault();
             send();
           }
         }}
         disabled={isStreaming}
         placeholder={t("placeholder")}
-        className="max-h-40 min-h-0 px-2"
-        rows={1}
+        aria-label={t("placeholder")}
+        className="max-h-40 min-h-16 px-3 py-2 text-sm"
+        rows={2}
       />
       <InputGroupAddon align="block-end" className="justify-between pt-1.5">
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <InputGroupButton
-                size="icon-sm"
-                variant="ghost"
-                aria-label={t("tools")}
-              >
-                <MoreHorizontal />
-              </InputGroupButton>
-            }
-          />
-          <DropdownMenuContent side="top" align="start" className="w-44">
-            <DropdownMenuItem onClick={() => fileRef.current?.click()}>
-              <Paperclip />
-              {t("uploadFile")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <InputGroupButton
+          size="icon-sm"
+          variant="ghost"
+          aria-label={t("uploadFile")}
+          title={t("uploadFile")}
+          disabled={isStreaming}
+          onClick={() => fileRef.current?.click()}
+        >
+          <Paperclip />
+        </InputGroupButton>
         <div className="flex items-center gap-2">
           <ToggleGroup
             variant="outline"
@@ -119,9 +105,9 @@ export default function ChatInput({
             onClick={send}
             disabled={isStreaming || !text.trim()}
             aria-label={t("send")}
-            className="from-primary to-chart-2 shadow-soft rounded-full bg-linear-to-br transition-transform duration-200 hover:scale-105 active:scale-95 disabled:hover:scale-100"
+            className="size-8 rounded-lg"
           >
-            {isStreaming ? <Spinner /> : <Send />}
+            {isStreaming ? <Spinner /> : <ArrowUp />}
           </InputGroupButton>
         </div>
       </InputGroupAddon>

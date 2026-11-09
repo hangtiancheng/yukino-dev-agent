@@ -1,4 +1,4 @@
-import { embedText } from "@/lib/ai/embedder";
+import { embedText, embeddingFallbackActive } from "@/lib/ai/embedder";
 import { rerankEnabled, tryRerank } from "@/lib/ai/rerank";
 
 import { hybridSearch, search, bm25Search, type MilvusHit } from "./client";
@@ -62,12 +62,58 @@ function buildStageIndex(hits: MilvusHit[]): StageRankIndex {
   return { rankById };
 }
 
+async function rerankDocs(
+  query: string,
+  docs: RetrievedDoc[],
+  topK: number,
+): Promise<RetrievedDoc[]> {
+  if (!rerankEnabled() || docs.length <= 1) {
+    return docs.slice(0, topK);
+  }
+  const ranked = await tryRerank(
+    query,
+    docs.map((d) => d.content),
+    Math.min(topK, docs.length),
+  );
+  if (!ranked) {
+    return docs.slice(0, topK);
+  }
+  return ranked.map((r, index) => ({
+    ...docs[r.index],
+    score: r.score,
+    stages: {
+      ...(docs[r.index]?.stages ?? {}),
+      rerankRank: index + 1,
+      rerankScore: r.score,
+    },
+  }));
+}
+
+async function bm25Only(
+  query: string,
+  candidateLimit: number,
+  topK: number,
+  filter: string | undefined,
+  excludeDevFlow: boolean,
+): Promise<RetrievedDoc[]> {
+  const hits = await bm25Search(query, candidateLimit, filter).catch(
+    () => [] as MilvusHit[],
+  );
+  let docs: RetrievedDoc[] = toDocs(hits).map((doc, index) => ({
+    ...doc,
+    stages: { bm25Rank: index + 1, bm25Score: doc.score },
+  }));
+  if (excludeDevFlow) {
+    docs = docs.filter((d) => !d.source.startsWith(DEV_FLOW_SOURCE_PREFIX));
+  }
+  return rerankDocs(query, docs, topK);
+}
+
 export async function retrieve(
   query: string,
   topK = DEFAULT_TOP_K,
   filter?: string,
 ): Promise<RetrievedDoc[]> {
-  const vector = await embedText(query);
   const excludeDevFlow = filter === undefined;
   const rerank = rerankEnabled();
   const candidateLimit =
@@ -77,6 +123,13 @@ export async function retrieve(
           MAX_CANDIDATE_LIMIT,
         )
       : topK;
+  if (embeddingFallbackActive()) {
+    return bm25Only(query, candidateLimit, topK, filter, excludeDevFlow);
+  }
+  const vector = await embedText(query);
+  if (embeddingFallbackActive()) {
+    return bm25Only(query, candidateLimit, topK, filter, excludeDevFlow);
+  }
   const [hits, denseHits, bm25Hits] = await Promise.all([
     hybridSearch(vector, query, candidateLimit, 50, filter),
     search(vector, candidateLimit, filter).catch(() => [] as MilvusHit[]),
@@ -106,25 +159,7 @@ export async function retrieve(
       },
     };
   });
-  if (rerank && withStages.length > 1) {
-    const ranked = await tryRerank(
-      query,
-      withStages.map((d) => d.content),
-      Math.min(topK, withStages.length),
-    );
-    if (ranked) {
-      return ranked.map((r, index) => ({
-        ...withStages[r.index],
-        score: r.score,
-        stages: {
-          ...(withStages[r.index]?.stages ?? {}),
-          rerankRank: index + 1,
-          rerankScore: r.score,
-        },
-      }));
-    }
-  }
-  return withStages.slice(0, topK);
+  return rerankDocs(query, withStages, topK);
 }
 
 export type RetrievalMethod = "hybrid" | "dense" | "bm25";
@@ -135,10 +170,13 @@ export async function retrieveRaw(
   filter?: string,
   method: RetrievalMethod = "hybrid",
 ): Promise<RetrievedDoc[]> {
-  if (method === "bm25") {
+  if (method === "bm25" || embeddingFallbackActive()) {
     return toDocs(await bm25Search(query, limit, filter));
   }
   const vector = await embedText(query);
+  if (embeddingFallbackActive()) {
+    return toDocs(await bm25Search(query, limit, filter));
+  }
   if (method === "dense") {
     return toDocs(await search(vector, limit, filter));
   }
@@ -157,7 +195,13 @@ export async function retrieveDense(
   topK = 1,
   filter?: string,
 ): Promise<RetrievedDoc[]> {
+  if (embeddingFallbackActive()) {
+    return [];
+  }
   const vector = await embedText(query);
+  if (embeddingFallbackActive()) {
+    return [];
+  }
   const hits = await search(vector, topK, filter);
   return toDocs(hits);
 }
