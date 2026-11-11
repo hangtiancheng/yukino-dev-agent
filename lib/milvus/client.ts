@@ -340,7 +340,7 @@ export async function getByIds(ids: string[]): Promise<MilvusHit[]> {
     timeout: TIMEOUT_MS,
   });
   checkStatus(res, "get");
-  const rows = (res.data ?? []) as unknown as Record<string, unknown>[];
+  const rows = (res.data ?? []) as Record<string, unknown>[];
   return rows.map((row) => ({
     id: asString(row.id),
     score: 0,
@@ -366,7 +366,7 @@ export async function queryByFilter(
     timeout: TIMEOUT_MS,
   });
   checkStatus(res, "query");
-  const rows = (res.data ?? []) as unknown as Record<string, unknown>[];
+  const rows = (res.data ?? []) as Record<string, unknown>[];
   return rows.map((row) => ({
     id: asString(row.id),
     score: 0,

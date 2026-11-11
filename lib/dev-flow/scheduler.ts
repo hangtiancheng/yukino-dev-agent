@@ -8,7 +8,7 @@ interface AutoSyncHandle {
   stopped: boolean;
 }
 
-const globalForAutoSync = globalThis as unknown as {
+const globalForAutoSync = globalThis as {
   devFlowAutoSync?: AutoSyncHandle;
 };
 

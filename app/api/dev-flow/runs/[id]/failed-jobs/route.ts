@@ -20,9 +20,7 @@ export async function GET(_request: Request, context: RouteContext) {
     if (!run) {
       return failRaw(404, "Workflow run not found");
     }
-    const jobs = Array.isArray(run.jobs)
-      ? (run.jobs as unknown as JobShape[])
-      : [];
+    const jobs = Array.isArray(run.jobs) ? (run.jobs as JobShape[]) : [];
     const failedJobs = jobs
       .filter((job) => job.conclusion === "failure")
       .map((job) => ({

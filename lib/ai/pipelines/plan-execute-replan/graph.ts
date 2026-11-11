@@ -292,7 +292,7 @@ export function fallbackReportContent(args: {
       ? "本次为通用巡检诊断, 未传入结构化告警; 请参见下方执行证据"
       : [
           "| 告警名称 | 级别 | 目标服务 | 首次触发时间 | 持续时间 | 状态 |",
-          "|---------|------|----------|-------------|---------|------|",
+          "|----------|------|----------|--------------|----------|------|",
           `| ${alertName} | ${severity} | ${service} | ${startsAt} | ${duration} | ${state} |`,
         ].join("\n");
   const executionLine = executionFailed

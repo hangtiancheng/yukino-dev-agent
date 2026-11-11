@@ -248,7 +248,7 @@ async function isGitWorkTree(dir: string): Promise<boolean> {
   return out?.toLowerCase() === "true";
 }
 
-const globalForSync = globalThis as unknown as {
+const globalForSync = globalThis as {
   devFlowWorkspaceSync?: Map<string, Promise<SyncResult>>;
 };
 function syncMap(): Map<string, Promise<SyncResult>> {
