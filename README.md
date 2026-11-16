@@ -18,6 +18,60 @@ Built on Next.js 16 + AI SDK, with Milvus for hybrid vector search (dense + nati
 
 ## setup
 
+### Runtime and CodeGraph
+
+Use Node.js 22.13+ and install with `pnpm install` (keep optional dependencies
+so the matching `@colbymchenry/codegraph-<platform>-<arch>` bundle is installed).
+Code graphs use [CodeGraph](https://github.com/colbymchenry/codegraph) 1.6.2,
+with native AST extraction and resolved symbol identities. Each checkout owns
+`.codegraph/codegraph.db`; no graph rows are stored in PostgreSQL.
+
+Open DevFlow's Code page to clone/attach a repository, then Code Graph to build
+its index. Search and impact reads automatically reconcile source changes.
+The chat agent uses the same engine through `codegraph_search` and
+`codegraph_impact`. Rebuild replaces the full index; Sync updates changes. Partial/old indexes are
+shown as stale and are excluded from PR/CI analysis evidence. Index operations
+run in isolated processes with locks, bounded output and timeouts. Checkouts
+with symlinks escaping the repository are rejected before indexing.
+
+The new API returns native graph identities:
+
+- `GET /api/dev-flow/repos/:id/code-graph?query=...&kind=method&language=typescript&path=src/&limit=50`
+  → `{message:"OK",data:{status,nodes,edges,excerpts,truncated}}`.
+- `POST /api/dev-flow/repos/:id/code-graph` with `{ "action": "rebuild" }` or
+  `{ "action": "sync" }` → `{status,filesErrored,errors}` in the response envelope.
+- `GET /api/dev-flow/repos/:id/code-graph/impact?files=src/a.ts,src/b.ts&depth=2`
+  follows resolved references for 1–3 hops (default 2), with source/target nodes,
+  edge kind, location, depth and truncation status.
+
+For an existing database, run `pnpm codegraph:migrate`. It rebuilds every
+connected repository's checkout sequentially, checks completeness, then drops
+`CodeSymbol` and `CodeRelation` in a transaction. If a checkout is missing or an
+index fails, the command reports the failures and keeps the old tables until a
+successful rerun. Old regex graph data is discarded, not converted.
+
+For databases with no connected checkouts to migrate, the focused SQL in
+`prisma/migrations/20261116000000_codegraph/migration.sql` drops only the two
+obsolete tables (`pnpm exec prisma db execute --file <that-file>`). The SQL is
+not a full schema baseline. Run `pnpm db:generate` after updating the schema.
+Indexes require persistent writable checkout storage and `git` on PATH.
+`pnpm build` prepares and traces a self-contained worker runtime under
+`generated/codegraph-runtime`, so production workers do not depend on pnpm
+symlinks or a user-level CodeGraph cache.
+
+Verify the actual engine offline with
+`pnpm exec tsx tests/dev-flow-code-graph.smoke.ts`.
+
+### Model configuration
+
+Copy `.env.example` to `.env` and fill in the API keys. The chat defaults match
+`ds-openai`: OpenAI-compatible DeepSeek at `https://api.deepseek.com`, model
+`deepseek-flash`, for both quick and think calls. Embeddings default to
+`qwen3.7-text-embedding-flash` at the Aliyun endpoint in `.env.example`, with
+`EMBEDDING_PROVIDER=openai` and a separate `OPENAI_EMBEDDING_API_KEY`.
+Credentials belong only in the git-ignored `.env`; the application reads `.env`
+and `lib/config.ts`, without loading a personal YAML config at runtime.
+
 ### Milvus (Vector DB)
 
 Requires Milvus Standalone 2.5+ / 3.x (gRPC :19530). One collection carries
@@ -33,7 +87,7 @@ bash standalone_embed.sh start
 ```
 
 See the [Milvus standalone docs](https://milvus.io/docs/install_standalone-docker.md)
-for other deployment options. `MILVUS_URI` defaults to `http://localhost:19530`.
+for other deployment options. `MILVUS_URI` defaults to `http://127.0.0.1:19530`.
 
 ### Prometheus & Grafana (monitoring, optional)
 
@@ -59,7 +113,7 @@ Prometheus port: `9090`. Grafana port: `3000` (`3000` under Docker is the Next.j
 - `POST /api/chat` — non-streaming chat
 - `POST /api/chat_stream` — SSE streaming chat
 - `POST /api/a2ui_action` — resolve an A2UI surface action into in-place update messages
-- `POST /api/upload` — upload a file (.txt/.md) to the knowledge base
+- `POST /api/upload` — upload a file (.txt/.md/.markdown/.pdf/.docx) to the knowledge base
 - `POST /api/ai_ops` — AI Ops plan-execute-replan
 - `POST /api/log` — yukino-sentry report endpoint (the SDK `dsn`)
 - `GET /api/metrics` — Prometheus exposition endpoint
@@ -103,12 +157,6 @@ Restored on top of the initial port:
   third legacy tool, `dev_flow_read_session_events` (sealed-session recall), is
   covered by `memory_recall` + `read_conversation_transcript`, since sealing now
   persists `ConversationMemory` snapshots instead of separate sealed sessions.
-- Code-graph search relations + code excerpts — the legacy
-  `GET /repos/{id}/code-graph/search` returned matched symbols together with the
-  import/call/define relations between them and a short code excerpt per symbol;
-  the port returns all three again (`searchCodeGraph` in `lib/dev-flow/code-graph.ts`)
-  and the Code Graph page renders them. Excerpts are read from the managed
-  checkout, so they appear once the repository is cloned (Code page).
 - DevFlow chat workflow tool — the legacy chat agent could autonomously run a
   bounded multi-agent engineering review (`workflow.run_engineering_review`); the
   chat agent exposes this again as the `run_engineering_workflow` tool, which

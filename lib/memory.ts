@@ -79,6 +79,18 @@ function textOf(msg: ModelMessage): string {
     .join(" ");
 }
 
+type SummarizeConversation = (prompt: string) => Promise<string>;
+
+async function summarizeConversation(prompt: string): Promise<string> {
+  const { text } = await generateText({
+    model: quickModel,
+    prompt,
+    abortSignal: AbortSignal.timeout(30_000),
+    maxRetries: 1,
+  });
+  return text;
+}
+
 export class SimpleMemory {
   readonly id: string;
   messages: ModelMessage[] = [];
@@ -87,7 +99,10 @@ export class SimpleMemory {
   private summary = "";
   private compacting = false;
 
-  constructor(id: string) {
+  constructor(
+    id: string,
+    private readonly summarize: SummarizeConversation = summarizeConversation,
+  ) {
     this.id = id;
   }
 
@@ -133,10 +148,7 @@ export class SimpleMemory {
     const oldSummary = this.summary;
     this.compacting = true;
     try {
-      const { text } = await generateText({
-        model: quickModel,
-        prompt: buildSummaryPrompt(oldSummary, folded),
-      });
+      const text = await this.summarize(buildSummaryPrompt(oldSummary, folded));
       const next = capSummary(text);
       if (next !== "") {
         this.summary = next;

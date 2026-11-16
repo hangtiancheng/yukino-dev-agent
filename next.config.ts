@@ -1,4 +1,4 @@
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { NextConfig } from "next";
@@ -9,10 +9,12 @@ const dirname__ = dirname(filename__);
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
-  serverExternalPackages: ["redis", "knex"],
+  outputFileTracingIncludes: {
+    "/api/dev-flow/**": ["./generated/codegraph-runtime/**/*"],
+  },
   allowedDevOrigins: ["127.0.0.1"],
   turbopack: {
-    root: resolve(dirname__, "..", ".."),
+    root: dirname__,
   },
 };
 

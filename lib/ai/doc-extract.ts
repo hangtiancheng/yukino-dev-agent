@@ -168,7 +168,7 @@ async function extractDocx(buffer: Buffer): Promise<string> {
     input: { buffer: Buffer },
     options?: unknown,
   ) => Promise<{ value: string; messages: unknown[] }>;
-  const mod = (await import("mammoth")) as unknown as {
+  const mod = (await import("mammoth")) as {
     default?: { convertToMarkdown?: ConvertToMarkdown };
     convertToMarkdown?: ConvertToMarkdown;
   };

@@ -34,11 +34,11 @@ export const config = {
     ),
   },
   openaiEmbedding: {
-    model: process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-v4",
+    model: process.env.OPENAI_EMBEDDING_MODEL ?? "qwen3.7-text-embedding-flash",
     apiKey: process.env.OPENAI_EMBEDDING_API_KEY ?? "",
     baseURL:
       process.env.OPENAI_EMBEDDING_BASE_URL ??
-      "https://openai.aliyuncs.com/compatible-mode/v1",
+      "https://llm-8dz8bqpid4h81d8y.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
   },
   rerank: {
     apiKey: process.env.RERANK_API_KEY ?? "",
@@ -50,7 +50,7 @@ export const config = {
     maxRetries: Number.parseInt(process.env.RERANK_MAX_RETRIES ?? "2", 10),
   },
   milvus: {
-    uri: process.env.MILVUS_URI ?? "http://localhost:19530",
+    uri: process.env.MILVUS_URI ?? "http://127.0.0.1:19530",
     token: process.env.MILVUS_TOKEN ?? "",
     collection: process.env.MILVUS_COLLECTION ?? "yukino_knowledge",
     analyzer: process.env.MILVUS_ANALYZER ?? "standard",

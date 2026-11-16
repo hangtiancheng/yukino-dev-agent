@@ -21,73 +21,23 @@ import { Empty, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
+import type {
+  GraphNode as SymbolRow,
+  GraphEdge as RelationRow,
+  GraphSearch as SymbolSearchResponse,
+  GraphIndex as RebuildSummary,
+  GraphImpact as ImpactReport,
+  GraphStatus,
+} from "@/lib/dev-flow/codegraph-types";
 import type { WorkspaceStatus } from "@/lib/dev-flow/types";
 
-interface SymbolRow {
-  id: string;
-  path: string;
-  name: string;
-  kind: string;
-  language: string;
-  startLine: number | null;
-  endLine: number | null;
-  branch: string | null;
-  commitSha: string | null;
-}
-
-interface RelationRow {
-  id: string;
-  sourceName: string | null;
-  targetName: string;
-  type: string;
-  path: string | null;
-  line: number | null;
-}
-
-interface ExcerptRow {
-  path: string;
-  symbol: string;
-  startLine: number;
-  endLine: number;
-  snippet: string;
-}
-
-interface SymbolSearchResponse {
-  query: string;
-  count: number;
-  symbols: SymbolRow[];
-  relations: RelationRow[];
-  documents: ExcerptRow[];
-}
-
-interface RebuildSummary {
-  branch: string;
-  commitSha: string | null;
-  filesScanned: number;
-  symbolCount: number;
-  relationCount: number;
-  truncated: boolean;
-}
-
-interface ImpactDependent {
-  path: string | null;
-  sourceName: string | null;
-  targetName: string;
-  type: string;
-  line: number | null;
-  sameFile: boolean;
-}
-
-interface ImpactReport {
-  files: string[];
-  symbols: SymbolRow[];
-  dependents: ImpactDependent[];
-}
+type ExcerptRow = SymbolSearchResponse["excerpts"][number];
 
 interface CommittedFilters {
   query: string;
   kind: string;
   language: string;
+  path: string;
 }
 
 function shortSha(sha: string | null): string {
@@ -100,18 +50,25 @@ function linesLabel(row: SymbolRow): string {
 
 export default function DevFlowCodeGraphPage() {
   const { repoId } = useDevFlow();
+  return <CodeGraphWorkspace key={repoId ?? "none"} repoId={repoId} />;
+}
+
+function CodeGraphWorkspace({ repoId }: { repoId: string | null }) {
   const t = useTranslations("devFlow.codeGraph");
   const tCode = useTranslations("devFlow.code");
 
   const [workspace, setWorkspace] = useState<WorkspaceStatus | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
   const [rebuilding, setRebuilding] = useState(false);
-  const [summary, setSummary] = useState<RebuildSummary | null>(null);
+  const [indexErrors, setIndexErrors] = useState<string[]>([]);
   const [reloadKey, setReloadKey] = useState(0);
+  const [graphStatus, setGraphStatus] = useState<GraphStatus | null>(null);
+  const [truncated, setTruncated] = useState(false);
 
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("");
   const [language, setLanguage] = useState("");
+  const [pathFilter, setPathFilter] = useState("");
   const [committed, setCommitted] = useState<CommittedFilters | null>(null);
   const [symbols, setSymbols] = useState<SymbolRow[]>([]);
   const [relations, setRelations] = useState<RelationRow[]>([]);
@@ -131,7 +88,13 @@ export default function DevFlowCodeGraphPage() {
         return;
       }
       setStatusLoading(true);
-      setSummary(null);
+      setIndexErrors([]);
+      setGraphStatus(null);
+      setImpactInput("");
+      setQuery("");
+      setKind("");
+      setLanguage("");
+      setPathFilter("");
       setCommitted(null);
       setSymbols([]);
       setRelations([]);
@@ -160,7 +123,7 @@ export default function DevFlowCodeGraphPage() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      if (!repoId) {
+      if (!repoId || !workspace?.cloned) {
         setSymbols([]);
         setRelations([]);
         setDocuments([]);
@@ -178,14 +141,19 @@ export default function DevFlowCodeGraphPage() {
         if (committed?.language) {
           params.set("language", committed.language);
         }
+        if (committed?.path) {
+          params.set("path", committed.path);
+        }
         params.set("limit", "100");
         const result = await dfGet<SymbolSearchResponse>(
           `/repos/${repoId}/code-graph?${params.toString()}`,
         );
         if (!cancelled) {
-          setSymbols(result.symbols);
-          setRelations(result.relations ?? []);
-          setDocuments(result.documents ?? []);
+          setSymbols(result.nodes);
+          setGraphStatus(result.status);
+          setTruncated(result.truncated);
+          setRelations(result.edges);
+          setDocuments(result.excerpts);
         }
       } catch (e) {
         if (!cancelled) {
@@ -203,35 +171,44 @@ export default function DevFlowCodeGraphPage() {
     return () => {
       cancelled = true;
     };
-  }, [repoId, committed, reloadKey]);
+  }, [repoId, workspace?.cloned, committed, reloadKey]);
 
   const handleSearch = () => {
+    if (busy || !cloned) {
+      return;
+    }
     setCommitted({
       query: query.trim(),
       kind: kind.trim(),
       language: language.trim(),
+      path: pathFilter.trim(),
     });
   };
 
-  const handleRebuild = async () => {
-    if (!repoId) {
+  const handleRebuild = async (action: "rebuild" | "sync") => {
+    if (!repoId || busy || !cloned) {
       return;
     }
     setRebuilding(true);
     try {
       const result = await dfPost<RebuildSummary>(
         `/repos/${repoId}/code-graph`,
-        { action: "rebuild" },
+        { action },
       );
-      setSummary(result);
-      notify.success(
-        t("rebuilt", {
-          files: result.filesScanned,
-          symbols: result.symbolCount,
-          relations: result.relationCount,
-          truncated: result.truncated ? t("truncatedNote") : "",
-        }),
-      );
+      setIndexErrors(result.errors);
+      setGraphStatus(result.status);
+      setImpact(null);
+      if (result.filesErrored === 0 && result.status.state === "complete") {
+        notify.success(
+          t("rebuilt", {
+            files: result.status.fileCount,
+            symbols: result.status.nodeCount,
+            relations: result.status.edgeCount,
+          }),
+        );
+      } else {
+        notify.error(t("indexIncomplete", { count: result.filesErrored }));
+      }
       setReloadKey((key) => key + 1);
     } catch (e) {
       notify.error(e instanceof Error ? e.message : String(e));
@@ -242,7 +219,7 @@ export default function DevFlowCodeGraphPage() {
 
   const handleImpact = async () => {
     const files = impactInput.trim();
-    if (!repoId || !files) {
+    if (!repoId || !files || busy || !cloned) {
       return;
     }
     setImpactLoading(true);
@@ -260,6 +237,7 @@ export default function DevFlowCodeGraphPage() {
   };
 
   const cloned = workspace?.cloned ?? false;
+  const busy = rebuilding || symbolsLoading || impactLoading;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -273,6 +251,9 @@ export default function DevFlowCodeGraphPage() {
             <CardTitle className="flex items-center gap-2 text-sm">
               <Network className="size-4" />
               {t("title")}
+              <Badge variant="outline">
+                CodeGraph {graphStatus?.version ?? ""}
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -285,15 +266,6 @@ export default function DevFlowCodeGraphPage() {
                 <Badge variant="outline" className="font-mono">
                   {shortSha(workspace?.commitSha ?? null)}
                 </Badge>
-                {summary ? (
-                  <span>
-                    {t("graphStats", {
-                      files: summary.filesScanned,
-                      symbols: summary.symbolCount,
-                      relations: summary.relationCount,
-                    })}
-                  </span>
-                ) : null}
               </div>
             ) : (
               <p className="text-muted-foreground text-xs">
@@ -301,8 +273,8 @@ export default function DevFlowCodeGraphPage() {
               </p>
             )}
             <Button
-              onClick={() => void handleRebuild()}
-              disabled={rebuilding || !repoId || !cloned}
+              onClick={() => void handleRebuild("rebuild")}
+              disabled={busy || !repoId || !cloned}
               size="sm"
             >
               {rebuilding ? (
@@ -312,11 +284,39 @@ export default function DevFlowCodeGraphPage() {
               )}
               {rebuilding ? t("rebuilding") : t("rebuild")}
             </Button>
+            <Button
+              onClick={() => void handleRebuild("sync")}
+              disabled={busy || !repoId || !cloned}
+              size="sm"
+              variant="outline"
+            >
+              {t("sync")}
+            </Button>
+            {indexErrors.length > 0 ? (
+              <ul className="text-destructive list-inside list-disc text-xs">
+                {indexErrors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            ) : null}
+            {graphStatus?.initialized ? (
+              <p className="text-muted-foreground text-xs">
+                {t("graphStats", {
+                  files: graphStatus.fileCount,
+                  symbols: graphStatus.nodeCount,
+                  relations: graphStatus.edgeCount,
+                })}
+                {graphStatus.stale ? ` · ${t("stale")}` : ` · ${t("fresh")}`}
+              </p>
+            ) : null}
           </CardContent>
         </Card>
       )}
 
       <div className="space-y-4">
+        {truncated ? (
+          <p className="text-muted-foreground text-xs">{t("truncatedNote")}</p>
+        ) : null}
         <div className="flex flex-wrap gap-2">
           <Input
             placeholder={t("searchPlaceholder")}
@@ -357,7 +357,21 @@ export default function DevFlowCodeGraphPage() {
             }}
             className="w-40"
           />
-          <Button onClick={handleSearch} disabled={symbolsLoading}>
+          <Input
+            placeholder={t("pathPlaceholder")}
+            aria-label={t("pathPlaceholder")}
+            value={pathFilter}
+            onChange={(event) => {
+              setPathFilter(event.target.value);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                handleSearch();
+              }
+            }}
+            className="w-48"
+          />
+          <Button onClick={handleSearch} disabled={busy || !cloned}>
             {symbolsLoading ? (
               <Spinner className="size-4" />
             ) : (
@@ -372,7 +386,7 @@ export default function DevFlowCodeGraphPage() {
             <Spinner className="size-5" />
           </div>
         ) : symbols.length > 0 ? (
-          <div className="border-border bg-card overflow-hidden rounded-lg border">
+          <div className="border-border bg-card overflow-x-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-muted-foreground border-border border-b text-left text-xs">
@@ -398,7 +412,7 @@ export default function DevFlowCodeGraphPage() {
                       {symbol.language}
                     </td>
                     <td className="max-w-72 truncate px-3 py-1.5 font-mono text-xs">
-                      {symbol.path}
+                      {symbol.filePath}
                     </td>
                     <td className="text-muted-foreground px-3 py-1.5 text-xs tabular-nums">
                       {linesLabel(symbol)}
@@ -426,7 +440,7 @@ export default function DevFlowCodeGraphPage() {
             <p className="text-muted-foreground text-xs font-medium">
               {t("relationsTitle", { count: relations.length })}
             </p>
-            <div className="border-border bg-card overflow-hidden rounded-lg border">
+            <div className="border-border bg-card overflow-x-auto rounded-lg border">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-muted-foreground border-border border-b text-left text-xs">
@@ -444,18 +458,21 @@ export default function DevFlowCodeGraphPage() {
                   {relations.map((relation) => (
                     <tr key={relation.id} className="hover:bg-accent/40">
                       <td className="px-3 py-1.5 font-mono text-xs">
-                        {relation.sourceName ?? "—"}
+                        {relation.source.qualifiedName}
                       </td>
                       <td className="px-3 py-1.5">
                         <Badge variant="outline" className="text-[10px]">
-                          {relation.type}
+                          {relation.kind}
                         </Badge>
                       </td>
                       <td className="px-3 py-1.5 font-mono text-xs">
-                        {relation.targetName}
+                        {relation.target.qualifiedName}
+                        <span className="text-muted-foreground block text-[10px]">
+                          {relation.target.filePath}:{relation.target.startLine}
+                        </span>
                       </td>
                       <td className="text-muted-foreground max-w-72 truncate px-3 py-1.5 font-mono text-xs">
-                        {relation.path ?? "—"}
+                        {relation.source.filePath}
                         {relation.line !== null ? `:${relation.line}` : ""}
                       </td>
                     </tr>
@@ -474,20 +491,20 @@ export default function DevFlowCodeGraphPage() {
             <div className="space-y-2">
               {documents.map((doc) => (
                 <div
-                  key={`${doc.path}:${doc.startLine}`}
+                  key={doc.nodeId}
                   className="border-border bg-card overflow-hidden rounded-lg border"
                 >
                   <div className="border-border bg-muted/40 text-muted-foreground flex items-center gap-2 border-b px-3 py-1.5 font-mono text-xs">
                     <FileCode2 className="size-3.5 shrink-0" />
                     <span className="truncate">
-                      {doc.path}:{doc.startLine}-{doc.endLine}
+                      {doc.filePath}:{doc.startLine}-{doc.endLine}
                     </span>
                     <Badge variant="secondary" className="ml-auto text-[10px]">
                       {doc.symbol}
                     </Badge>
                   </div>
                   <pre className="text-foreground/90 max-h-56 overflow-auto px-3 py-2 font-mono text-xs leading-relaxed whitespace-pre">
-                    {doc.snippet}
+                    {doc.content}
                   </pre>
                 </div>
               ))}
@@ -520,7 +537,7 @@ export default function DevFlowCodeGraphPage() {
             />
             <Button
               onClick={() => void handleImpact()}
-              disabled={impactLoading || !impactInput.trim() || !repoId}
+              disabled={busy || !impactInput.trim() || !repoId || !cloned}
               variant="outline"
             >
               {impactLoading ? (
@@ -532,8 +549,16 @@ export default function DevFlowCodeGraphPage() {
             </Button>
           </div>
 
+          {impact?.truncated ? (
+            <p className="text-muted-foreground text-xs">
+              {t("truncatedNote")}
+            </p>
+          ) : null}
+          {impact?.status.stale ? (
+            <p className="text-muted-foreground text-xs">{t("stale")}</p>
+          ) : null}
           {impact ? (
-            impact.symbols.length === 0 && impact.dependents.length === 0 ? (
+            impact.nodes.length === 0 && impact.dependents.length === 0 ? (
               <p className="text-muted-foreground py-2 text-center text-sm">
                 {t("impactNone")}
               </p>
@@ -541,10 +566,10 @@ export default function DevFlowCodeGraphPage() {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <p className="text-muted-foreground text-xs">
-                    {t("changedSymbols", { count: impact.symbols.length })}
+                    {t("changedSymbols", { count: impact.nodes.length })}
                   </p>
                   <div className="flex flex-wrap gap-1">
-                    {impact.symbols.map((symbol) => (
+                    {impact.nodes.map((symbol) => (
                       <Badge
                         key={symbol.id}
                         variant="secondary"
@@ -552,7 +577,7 @@ export default function DevFlowCodeGraphPage() {
                       >
                         {symbol.name}
                         <span className="text-muted-foreground font-normal">
-                          {symbol.path}:{symbol.startLine ?? "?"}
+                          {symbol.filePath}:{symbol.startLine ?? "?"}
                         </span>
                       </Badge>
                     ))}
@@ -570,22 +595,23 @@ export default function DevFlowCodeGraphPage() {
                     <div className="border-border bg-card divide-border divide-y overflow-hidden rounded-lg border">
                       {impact.dependents.map((dependent, index) => (
                         <div
-                          key={`${dependent.type}:${dependent.path}:${dependent.sourceName}:${dependent.targetName}:${index}`}
+                          key={`${dependent.kind}:${dependent.source.filePath}:${dependent.source.qualifiedName}:${dependent.target.qualifiedName}:${index}`}
                           className="flex flex-wrap items-center gap-2 px-3 py-1.5 text-xs"
                         >
                           <Badge variant="outline" className="text-[10px]">
-                            {dependent.type}
+                            {dependent.kind} ·{" "}
+                            {t("hop", { depth: dependent.depth })}
                           </Badge>
                           <span className="font-mono">
-                            {dependent.sourceName ?? dependent.path ?? "?"}
+                            {dependent.source.qualifiedName}
                           </span>
                           <span className="text-muted-foreground">→</span>
                           <span className="font-mono">
-                            {dependent.targetName}
+                            {dependent.target.qualifiedName}
                           </span>
-                          {dependent.path ? (
+                          {dependent.source.filePath ? (
                             <span className="text-muted-foreground ml-auto truncate font-mono text-[10px]">
-                              {dependent.path}
+                              {dependent.source.filePath}
                               {dependent.line ? `:${dependent.line}` : ""}
                             </span>
                           ) : null}

@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
   ...nextTs,
   globalIgnores([
     ".next/**",
+    ".legacy/**",
+    "data/workspaces/**",
     "build/**",
     "components/ui/**",
     "eslint.config.mjs",

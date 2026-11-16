@@ -178,3 +178,7 @@ target
 /generated/
 
 /data/workspaces/
+
+# Native CodeGraph indexes live beside each checkout.
+.codegraph/
+.codegraph-*/

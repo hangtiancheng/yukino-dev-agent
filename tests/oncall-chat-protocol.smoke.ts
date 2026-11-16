@@ -224,7 +224,9 @@ function checkMemoryCompaction() {
 }
 
 async function checkCompactionFailurePath() {
-  const mem = new SimpleMemory("smoke_fail_session");
+  const mem = new SimpleMemory("smoke_fail_session", () =>
+    Promise.reject(new Error("injected summary failure")),
+  );
   for (let i = 0; i < 20; i++) {
     mem.setMessages({
       role: i % 2 === 0 ? "user" : "assistant",

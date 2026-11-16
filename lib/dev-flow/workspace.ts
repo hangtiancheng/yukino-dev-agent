@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdir, readdir, readFile, realpath, rm, stat } from "node:fs/promises";
+import { mkdir, open, readdir, realpath, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 
@@ -23,6 +23,7 @@ export class WorkspaceError extends Error {
 
 const SKIP_DIRS = new Set([
   ".git",
+  ".codegraph",
   ".hg",
   ".svn",
   ".next",
@@ -69,6 +70,20 @@ const TEXT_EXTENSIONS = new Set([
   ".kt",
   ".kts",
   ".scala",
+  ".dart",
+  ".lua",
+  ".luau",
+  ".vue",
+  ".svelte",
+  ".astro",
+  ".ex",
+  ".exs",
+  ".erl",
+  ".hrl",
+  ".tf",
+  ".sol",
+  ".nix",
+  ".pas",
   ".sql",
   ".sh",
   ".ps1",
@@ -125,7 +140,9 @@ const STOP_TERMS = new Set([
 
 export function workspaceRoot(): string {
   const dir = config.devFlow.workspace.checkoutDir;
-  const abs = path.isAbsolute(dir) ? dir : path.resolve(process.cwd(), dir);
+  const abs = path.isAbsolute(dir)
+    ? dir
+    : path.resolve(/* turbopackIgnore: true */ process.cwd(), dir);
   return abs;
 }
 
@@ -237,7 +254,7 @@ async function gitText(args: string[], cwd: string): Promise<string | null> {
 
 async function isGitWorkTree(dir: string): Promise<boolean> {
   try {
-    const s = await stat(dir);
+    const s = await stat(/* turbopackIgnore: true */ dir);
     if (!s.isDirectory()) {
       return false;
     }
@@ -322,9 +339,14 @@ async function doSyncCheckout(repo: Repository): Promise<SyncResult> {
     };
   }
 
-  await mkdir(path.dirname(target), { recursive: true });
+  await mkdir(/* turbopackIgnore: true */ path.dirname(target), {
+    recursive: true,
+  });
   try {
-    await rm(target, { recursive: true, force: true });
+    await rm(/* turbopackIgnore: true */ target, {
+      recursive: true,
+      force: true,
+    });
   } catch {}
   const cloneArgs = ["clone", "--depth", "1"];
   if (branch) {
@@ -375,13 +397,13 @@ export async function removeRepoCheckout(repo: Repository): Promise<string[]> {
   for (const root of roots) {
     let realRoot: string;
     try {
-      realRoot = await realpath(root);
+      realRoot = await realpath(/* turbopackIgnore: true */ root);
     } catch {
       continue;
     }
-    const entries = await readdir(realRoot, { withFileTypes: true }).catch(
-      () => [],
-    );
+    const entries = await readdir(/* turbopackIgnore: true */ realRoot, {
+      withFileTypes: true,
+    }).catch(() => []);
     for (const entry of entries) {
       if (!entry.isDirectory() && !entry.isSymbolicLink()) {
         continue;
@@ -390,7 +412,9 @@ export async function removeRepoCheckout(repo: Repository): Promise<string[]> {
         continue;
       }
       const candidate = path.join(realRoot, entry.name);
-      const real = await realpath(candidate).catch(() => null);
+      const real = await realpath(/* turbopackIgnore: true */ candidate).catch(
+        () => null,
+      );
       if (!real) {
         continue;
       }
@@ -398,15 +422,26 @@ export async function removeRepoCheckout(repo: Repository): Promise<string[]> {
       if (rel === "" || rel.startsWith("..") || path.isAbsolute(rel)) {
         continue;
       }
-      await rm(real, { recursive: true, force: true });
+      await rm(/* turbopackIgnore: true */ real, {
+        recursive: true,
+        force: true,
+      });
       removed.push(real);
     }
   }
   return removed;
 }
 
+function isSecretFile(name: string): boolean {
+  return SECRET_FILENAMES.has(name) || name.startsWith(".env.");
+}
+
+function isSkippedDirectory(name: string): boolean {
+  return SKIP_DIRS.has(name) || name.startsWith(".codegraph-");
+}
+
 function isTextFile(name: string): boolean {
-  if (SECRET_FILENAMES.has(name)) {
+  if (isSecretFile(name)) {
     return false;
   }
   const lower = name.toLowerCase();
@@ -428,17 +463,39 @@ function relParts(checkout: string, rel: string): string[] {
       : requested.replace(/^[\\/]+/, "");
   const resolved = path.resolve(checkout, normalized);
   const relative = path.relative(checkout, resolved);
-  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+  if (
+    relative === ".." ||
+    relative.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relative)
+  ) {
     throw new WorkspaceError("Path is outside the repository workspace");
   }
   const parts = relative === "" ? [] : relative.split(path.sep);
-  if (parts.some((p) => SKIP_DIRS.has(p))) {
+  if (parts.some(isSkippedDirectory)) {
     throw new WorkspaceError("Path is inside a skipped directory");
   }
-  if (parts.length > 0 && SECRET_FILENAMES.has(parts[parts.length - 1])) {
+  if (parts.some(isSecretFile)) {
     throw new WorkspaceError("Refusing to access a secret config file");
   }
   return parts;
+}
+
+/** Resolve links before reading; lexical containment alone cannot guard symlinks. */
+async function resolveWorkspacePath(
+  checkout: string,
+  parts: string[],
+): Promise<string> {
+  const root = await realpath(/* turbopackIgnore: true */ checkout);
+  const target = await realpath(
+    /* turbopackIgnore: true */ path.resolve(root, ...parts),
+  ).catch(() => null);
+  if (!target) {
+    throw new WorkspaceError("Path does not exist", 404);
+  }
+  // Recheck resolved names too, so safe.ts -> .env and aliases to build/index
+  // directories cannot bypass the filename/directory policy.
+  relParts(root, path.relative(root, target));
+  return target;
 }
 
 async function readTextBounded(
@@ -446,14 +503,37 @@ async function readTextBounded(
   maxBytes: number,
 ): Promise<string | null> {
   try {
-    const data = await readFile(file);
-    if (data.length === 0 || data.length > maxBytes) {
-      return null;
+    const handle = await open(/* turbopackIgnore: true */ file, "r");
+    try {
+      const info = await handle.stat();
+      if (!info.isFile() || info.size === 0 || info.size > maxBytes) {
+        return null;
+      }
+      // A fixed buffer also bounds reads when the file grows after stat().
+      const data = Buffer.alloc(maxBytes + 1);
+      let used = 0;
+      while (used < data.length) {
+        const { bytesRead } = await handle.read(
+          data,
+          used,
+          data.length - used,
+          null,
+        );
+        if (bytesRead === 0) {
+          break;
+        }
+        used += bytesRead;
+      }
+      if (
+        used > maxBytes ||
+        data.subarray(0, Math.min(used, 4096)).includes(0)
+      ) {
+        return null;
+      }
+      return data.subarray(0, used).toString("utf8");
+    } finally {
+      await handle.close();
     }
-    if (data.subarray(0, 4096).includes(0)) {
-      return null;
-    }
-    return data.toString("utf8");
   } catch {
     return null;
   }
@@ -470,9 +550,10 @@ export async function listFiles(
   relPath: string,
   limit = 200,
 ): Promise<FileEntry[]> {
+  checkout = await realpath(/* turbopackIgnore: true */ checkout);
   const parts = relParts(checkout, relPath);
-  const root = path.resolve(checkout, ...parts);
-  const s = await stat(root).catch(() => null);
+  const root = await resolveWorkspacePath(checkout, parts);
+  const s = await stat(/* turbopackIgnore: true */ root).catch(() => null);
   if (!s) {
     throw new WorkspaceError("Path does not exist", 404);
   }
@@ -486,13 +567,15 @@ export async function listFiles(
     if (out.length >= cap) {
       return;
     }
-    const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+    const entries = await readdir(/* turbopackIgnore: true */ dir, {
+      withFileTypes: true,
+    }).catch(() => []);
     entries.sort((a, b) => a.name.localeCompare(b.name));
     for (const entry of entries) {
       if (out.length >= cap) {
         return;
       }
-      if (SKIP_DIRS.has(entry.name)) {
+      if (isSkippedDirectory(entry.name)) {
         continue;
       }
       const abs = path.join(dir, entry.name);
@@ -501,10 +584,12 @@ export async function listFiles(
         out.push({ path: rel, type: "dir", size: null });
         await walk(abs);
       } else if (entry.isFile()) {
-        if (SECRET_FILENAMES.has(entry.name)) {
+        if (isSecretFile(entry.name)) {
           continue;
         }
-        const st = await stat(abs).catch(() => null);
+        const st = await stat(/* turbopackIgnore: true */ abs).catch(
+          () => null,
+        );
         out.push({ path: rel, type: "file", size: st ? st.size : null });
       }
     }
@@ -527,13 +612,14 @@ export async function readCodeFile(
   relPath: string,
   opts: { startLine?: number; lineCount?: number } = {},
 ): Promise<FileContent> {
+  checkout = await realpath(/* turbopackIgnore: true */ checkout);
   const parts = relParts(checkout, relPath);
   if (parts.length === 0) {
     throw new WorkspaceError("Path is required");
   }
-  const abs = path.resolve(checkout, ...parts);
+  const abs = await resolveWorkspacePath(checkout, parts);
   const name = parts[parts.length - 1];
-  const s = await stat(abs).catch(() => null);
+  const s = await stat(/* turbopackIgnore: true */ abs).catch(() => null);
   if (!s?.isFile()) {
     throw new WorkspaceError("File not found", 404);
   }
@@ -639,9 +725,10 @@ export async function searchCode(
   if (terms.length === 0) {
     return [];
   }
+  checkout = await realpath(/* turbopackIgnore: true */ checkout);
   const parts = relParts(checkout, relPath ?? ".");
-  const root = path.resolve(checkout, ...parts);
-  const s = await stat(root).catch(() => null);
+  const root = await resolveWorkspacePath(checkout, parts);
+  const s = await stat(/* turbopackIgnore: true */ root).catch(() => null);
   if (!s) {
     throw new WorkspaceError("Path does not exist", 404);
   }
@@ -656,12 +743,14 @@ export async function searchCode(
     if (scanned >= maxScan || best.size >= cappedLimit * 8) {
       return;
     }
-    const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+    const entries = await readdir(/* turbopackIgnore: true */ dir, {
+      withFileTypes: true,
+    }).catch(() => []);
     for (const entry of entries) {
       if (scanned >= maxScan || best.size >= cappedLimit * 8) {
         return;
       }
-      if (SKIP_DIRS.has(entry.name)) {
+      if (isSkippedDirectory(entry.name)) {
         continue;
       }
       const abs = path.join(dir, entry.name);

@@ -37,8 +37,6 @@ model Repository {
   kbConfig           KnowledgeBaseConfig?
   retrievalTestRuns  RetrievalTestRun[]
   workflowRunRecords AgentWorkflowRun[]
-  codeSymbols        CodeSymbol[]
-  codeRelations      CodeRelation[]
   graphEdges         KnowledgeGraphEdge[]
   teamMembers        TeamMember[]
   threadMemory       ThreadMemory?
@@ -409,47 +407,6 @@ model AgentTaskRun {
 
   @@index([workflowId])
   @@index([agentName])
-}
-
-model CodeSymbol {
-  id        String   @id @default(uuid())
-  repoId    String
-  path      String
-  name      String
-  kind      String   @default("symbol")
-  language  String   @default("text")
-  startLine Int?
-  endLine   Int?
-  branch    String?
-  commitSha String?
-  prNumber  Int?
-  meta      Json     @default("{}")
-  createdAt DateTime @default(now())
-
-  repo Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
-
-  @@index([repoId, path])
-  @@index([repoId, name])
-  @@index([repoId, prNumber])
-}
-
-model CodeRelation {
-  id         String   @id @default(uuid())
-  repoId     String
-  sourceName String?
-  targetName String
-  type       String   @default("calls")
-  path       String?
-  branch     String?
-  prNumber   Int?
-  meta       Json     @default("{}")
-  createdAt  DateTime @default(now())
-
-  repo Repository @relation(fields: [repoId], references: [id], onDelete: Cascade)
-
-  @@index([repoId, targetName])
-  @@index([repoId, sourceName])
-  @@index([repoId, prNumber])
 }
 
 model KnowledgeGraphEdge {

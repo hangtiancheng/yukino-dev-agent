@@ -50,7 +50,8 @@ function resolveUserPath(raw: string): string {
   const expanded = cleaned.startsWith("~/")
     ? path.join(homedir(), cleaned.slice(2))
     : cleaned;
-  return path.resolve(expanded);
+  // Local checkout paths are runtime data, outside the deployable source tree.
+  return path.resolve(/* turbopackIgnore: true */ expanded);
 }
 
 export async function GET() {
@@ -138,7 +139,7 @@ export async function POST(request: Request) {
       } catch (e) {
         return failRaw(400, errorMessage(e));
       }
-      const s = await stat(abs).catch(() => null);
+      const s = await stat(/* turbopackIgnore: true */ abs).catch(() => null);
       if (!s?.isDirectory()) {
         return failRaw(
           400,
@@ -163,7 +164,9 @@ export async function POST(request: Request) {
       } catch (e) {
         return failRaw(400, errorMessage(e));
       }
-      localPath = await realpath(toplevel).catch(() => path.resolve(toplevel));
+      localPath = await realpath(/* turbopackIgnore: true */ toplevel).catch(
+        () => path.resolve(/* turbopackIgnore: true */ toplevel),
+      );
       checkoutMode = "local";
       let remoteUrl = "";
       try {
@@ -234,7 +237,9 @@ export async function POST(request: Request) {
         provider === "github_compatible" ? (rawApiBaseUrl ?? null) : null;
       if (rawCloneParentDir) {
         const absParent = resolveUserPath(rawCloneParentDir);
-        const ps = await stat(absParent).catch(() => null);
+        const ps = await stat(/* turbopackIgnore: true */ absParent).catch(
+          () => null,
+        );
         if (ps && !ps.isDirectory()) {
           return failRaw(
             400,

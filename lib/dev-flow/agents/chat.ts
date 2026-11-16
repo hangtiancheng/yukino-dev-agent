@@ -12,6 +12,7 @@ import { z } from "zod/v4";
 import type { Repository } from "@/generated/prisma/client";
 import { quickModel, providerOptions, quickModelId } from "@/lib/ai/models";
 import { prisma } from "@/lib/db";
+import { impactForFiles, searchCodeGraph } from "@/lib/dev-flow/code-graph";
 import {
   compressMessages,
   defaultContextBudget,
@@ -785,6 +786,87 @@ function buildTools(
           status: draft.status,
           note: "Draft created. It will only be executed after a human confirms it on the Action Drafts page.",
         });
+      },
+    }),
+    codegraph_search: tool({
+      description:
+        "Search the repository's CodeGraph AST index for symbols, methods and resolved incoming/outgoing relationships, with source excerpts. Use for structural code questions. Requires an index built on the Code Graph page; initialized=false means build it there. A stale index is incomplete evidence. Reads reconcile current checkout changes.",
+      inputSchema: z.object({
+        query: z.string().trim().max(200),
+        kind: z.string().max(40).optional(),
+        language: z.string().max(40).optional(),
+        path: z.string().max(400).optional(),
+      }),
+      execute: async (input) => {
+        try {
+          const result = await searchCodeGraph(repoId, { ...input, limit: 10 });
+          return pack({
+            status: result.status,
+            nodes: result.nodes,
+            edges: result.edges.slice(0, 20).map((edge) => ({
+              source: {
+                id: edge.source.id,
+                name: edge.source.qualifiedName,
+                path: edge.source.filePath,
+              },
+              target: {
+                id: edge.target.id,
+                name: edge.target.qualifiedName,
+                path: edge.target.filePath,
+              },
+              kind: edge.kind,
+              line: edge.line,
+            })),
+            excerpts: result.excerpts.slice(0, 3).map((item) => ({
+              ...item,
+              content: item.content.slice(0, 800),
+            })),
+            truncated:
+              result.truncated ||
+              result.edges.length > 20 ||
+              result.excerpts.length > 3 ||
+              result.excerpts.some((item) => item.content.length > 800),
+          });
+        } catch (error) {
+          return pack({
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      },
+    }),
+    codegraph_impact: tool({
+      description:
+        "Trace which code depends on changed repository-relative files using CodeGraph's resolved node IDs. Follows references for up to three hops, including imports and calls. Read-only source analysis; initialized=false or stale=true is not evidence of no impact.",
+      inputSchema: z.object({
+        files: z.array(z.string().min(1).max(400)).min(1).max(50),
+        depth: z.number().int().min(1).max(3).default(2),
+      }),
+      execute: async ({ files, depth }) => {
+        try {
+          const result = await impactForFiles(repoId, files, depth);
+          return pack({
+            status: result.status,
+            files: result.files,
+            nodes: result.nodes.slice(0, 20),
+            dependents: result.dependents.slice(0, 30).map((edge) => ({
+              source: edge.source.qualifiedName,
+              sourcePath: edge.source.filePath,
+              target: edge.target.qualifiedName,
+              targetPath: edge.target.filePath,
+              kind: edge.kind,
+              line: edge.line,
+              depth: edge.depth,
+            })),
+            truncated:
+              result.truncated ||
+              result.nodes.length > 20 ||
+              result.dependents.length > 30,
+          });
+        } catch (error) {
+          return pack({
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       },
     }),
     workspace_list_files: tool({

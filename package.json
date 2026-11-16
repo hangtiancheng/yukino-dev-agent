@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "pnpm db:generate && next build",
+    "build": "pnpm db:generate && pnpm codegraph:prepare && next build",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -19,7 +19,9 @@
     "git:config": "git config user.name hangtiancheng && git config user.email '161043261@qq.com'",
     "git:commit": "git add -A && git commit -m \"feat(noop): noop...\"",
     "git:push": "pnpm git:commit && git push origin main",
-    "prepare": "husky"
+    "prepare": "husky",
+    "codegraph:migrate": "tsx scripts/migrate-codegraphs.ts",
+    "codegraph:prepare": "node scripts/prepare-codegraph-runtime.mjs"
   },
   "lint-staged": {
     "*.{json,jsonc,js,cjs,mjs,jsx,ts,cts,mts,tsx,html,vue,css,scss,md,mdx}": [
@@ -36,6 +38,7 @@
     "@ai-sdk/openai-compatible": "^3.0.67",
     "@anthropic-ai/sdk": "^0.104.2",
     "@base-ui/react": "=1.8.0",
+    "@colbymchenry/codegraph": "1.6.2",
     "@langchain/community": "^1.1.29",
     "@langchain/core": "^1.2.17",
     "@langchain/langgraph": "^1.4.21",
@@ -108,5 +111,8 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.1",
     "vitest": "^5.0.3"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   }
 }

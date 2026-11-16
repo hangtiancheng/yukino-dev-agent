@@ -2202,20 +2202,21 @@ export async function reviewPull(
 }
 
 function summarizeCodeImpact(impact: ImpactReport | null) {
-  if (impact === null) {
+  if (impact === null || !impact.status.initialized || impact.status.stale) {
     return null;
   }
-  const symbols = impact.symbols.slice(0, 20).map((s) => ({
+  const symbols = impact.nodes.slice(0, 20).map((s) => ({
     name: s.name,
     kind: s.kind,
-    path: s.path,
+    path: s.filePath,
     start_line: s.startLine,
   }));
   const dependents = impact.dependents.slice(0, 20).map((d) => ({
-    path: d.path,
-    source: d.sourceName,
-    target: d.targetName,
-    type: d.type,
+    path: d.source.filePath,
+    source: d.source.qualifiedName,
+    target: d.target.qualifiedName,
+    type: d.kind,
+    depth: d.depth,
     same_file: d.sameFile,
   }));
   if (symbols.length === 0 && dependents.length === 0) {
@@ -2224,7 +2225,12 @@ function summarizeCodeImpact(impact: ImpactReport | null) {
   return {
     symbols,
     dependents,
-    truncated: impact.symbols.length > 20 || impact.dependents.length > 20,
+    truncated:
+      impact.truncated ||
+      impact.nodes.length > 20 ||
+      impact.dependents.length > 20,
+    engine: impact.status.engine,
+    stale: impact.status.stale,
   };
 }
 

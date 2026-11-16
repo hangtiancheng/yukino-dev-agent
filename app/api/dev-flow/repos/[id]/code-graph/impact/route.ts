@@ -2,7 +2,10 @@ import { z } from "zod/v4";
 
 import { impactForFiles } from "@/lib/dev-flow/code-graph";
 import { errorMessage, fail, failRaw, ok } from "@/lib/dev-flow/http";
-import { getRepoOrThrow, WorkspaceError } from "@/lib/dev-flow/workspace";
+import { WorkspaceError } from "@/lib/dev-flow/workspace";
+
+export const runtime = "nodejs";
+export const maxDuration = 120;
 
 export { OPTIONS } from "@/lib/dev-flow/http";
 
@@ -11,7 +14,8 @@ interface RouteContext {
 }
 
 const ImpactQuerySchema = z.object({
-  files: z.string().trim().min(1).max(4000),
+  files: z.string().trim().min(1).max(20000),
+  depth: z.coerce.number().int().min(1).max(3).default(2),
 });
 
 export async function GET(request: Request, context: RouteContext) {
@@ -29,13 +33,12 @@ export async function GET(request: Request, context: RouteContext) {
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean);
-    if (files.length === 0) {
+    if (files.length === 0 || files.length > 50) {
       return await fail(400, "invalidQuery", {
-        detail: "files must contain at least one path",
+        detail: "files must contain between 1 and 50 paths",
       });
     }
-    await getRepoOrThrow(id);
-    return ok(await impactForFiles(id, files));
+    return ok(await impactForFiles(id, files, parsed.data.depth));
   } catch (e) {
     if (e instanceof WorkspaceError) {
       return failRaw(e.status, e.message);

@@ -28,6 +28,7 @@ const asJson = (value: unknown): Prisma.InputJsonValue =>
 const PROJECT_PREFIX = "dev_flow:project";
 const SKIP_DIRS = new Set([
   ".git",
+  ".codegraph",
   "node_modules",
   ".next",
   ".nuxt",
@@ -98,12 +99,13 @@ function docSource(repoId: string, rel: string): string {
 }
 
 function classify(rel: string): ProjectDocCandidate | null {
-  const name = path.basename(rel);
+  const name = path.posix.basename(rel);
   const lower = name.toLowerCase();
-  if (SECRET_FILENAMES.has(name)) {
+  if (SECRET_FILENAMES.has(name) || name.startsWith(".env.")) {
     return null;
   }
-  const dirParts = path.dirname(rel).split(path.sep);
+  const directory = path.posix.dirname(rel);
+  const dirParts = directory === "." ? [] : directory.split("/");
   const underDocs = dirParts.some((p) => p === "docs" || p === "doc");
 
   if (/^readme(\.|$)/i.test(name)) {
@@ -145,12 +147,14 @@ export async function discoverProjectDocs(
     if (out.length >= maxFiles || visited > 5000) {
       return;
     }
-    const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+    const entries = await readdir(/* turbopackIgnore: true */ dir, {
+      withFileTypes: true,
+    }).catch(() => []);
     for (const entry of entries) {
       if (out.length >= maxFiles || visited > 5000) {
         return;
       }
-      if (SKIP_DIRS.has(entry.name)) {
+      if (SKIP_DIRS.has(entry.name) || entry.name.startsWith(".codegraph-")) {
         continue;
       }
       const abs = path.join(dir, entry.name);
@@ -213,11 +217,16 @@ export async function buildSummary(
   checkout: string,
   candidates: ProjectDocCandidate[],
 ): Promise<Record<string, unknown>> {
-  const topEntries = await readdir(checkout, { withFileTypes: true }).catch(
-    () => [],
-  );
+  const topEntries = await readdir(/* turbopackIgnore: true */ checkout, {
+    withFileTypes: true,
+  }).catch(() => []);
   const topDirs = topEntries
-    .filter((e) => e.isDirectory() && !SKIP_DIRS.has(e.name))
+    .filter(
+      (e) =>
+        e.isDirectory() &&
+        !SKIP_DIRS.has(e.name) &&
+        !e.name.startsWith(".codegraph-"),
+    )
     .map((e) => e.name)
     .sort()
     .slice(0, 12);
@@ -356,6 +365,7 @@ export async function loadProjectIndexPolicy(
 ): Promise<ProjectIndexPolicy> {
   try {
     const raw = await readFile(
+      /* turbopackIgnore: true */
       path.join(checkout, ".devFlow", "index.yml"),
       "utf8",
     );
@@ -405,7 +415,7 @@ async function readBounded(
   maxBytes: number,
 ): Promise<string | null> {
   try {
-    const data = await readFile(file);
+    const data = await readFile(/* turbopackIgnore: true */ file);
     if (data.length === 0 || data.length > maxBytes) {
       return null;
     }
@@ -494,7 +504,9 @@ export async function indexProject(repo: Repository): Promise<{
   try {
     const checkout = repoCheckoutPath(repo);
     const synced = await syncCheckout(repo);
-    await mkdir(path.dirname(checkout), { recursive: true });
+    await mkdir(/* turbopackIgnore: true */ path.dirname(checkout), {
+      recursive: true,
+    });
     const policy = await loadProjectIndexPolicy(synced.path);
     const candidates = await discoverProjectDocs(synced.path, 500, policy);
     const fingerprint = projectFingerprint(
