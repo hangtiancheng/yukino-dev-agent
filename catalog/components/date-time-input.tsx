@@ -1,6 +1,6 @@
 import { createComponentImplementation } from "@a2ui/react/v0_9";
 import { DateTimeInputApi } from "@a2ui/web_core/v0_9/basic_catalog";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useId, useState } from "react";
 
@@ -56,7 +56,8 @@ export const DateTimeInput = createComponentImplementation(
     const errors = props.validationErrors;
     const hasError = !!errors && errors.length > 0;
     const { date, time } = splitValue(props.value);
-    const selected = date ? new Date(`${date}T00:00:00`) : undefined;
+    const parsedData = date ? new Date(`${date}T00:00:00`) : undefined;
+    const selected = parsedData && isValid(parsedData) ? parsedData : undefined;
 
     const min = typeof props.min === "string" ? props.min : undefined;
     const max = typeof props.max === "string" ? props.max : undefined;
@@ -90,17 +91,15 @@ export const DateTimeInput = createComponentImplementation(
 
     return (
       <Field data-invalid={hasError || undefined}>
-        {props.label && (
-          <FieldLabel htmlFor={enableTime ? id : undefined}>
-            {props.label}
-          </FieldLabel>
-        )}
+        {props.label && <FieldLabel htmlFor={id}>{props.label}</FieldLabel>}
         <div className="flex items-center gap-2">
           {enableDate && (
             <Popover open={open} onOpenChange={setOpen}>
               <PopoverTrigger
                 render={
                   <Button
+                    id={enableTime ? undefined : id}
+                    aria-label={props.label || "select date time"}
                     variant="outline"
                     className={cn(
                       "flex-1 justify-start font-normal",

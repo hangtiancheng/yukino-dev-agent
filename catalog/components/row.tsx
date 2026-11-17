@@ -11,7 +11,7 @@ export const Row = createComponentImplementation(
     return (
       <div
         className={cn(
-          "flex flex-row gap-3",
+          "flex flex-row flex-wrap gap-3",
           justifyClass(props.justify),
           alignClass(props.align),
         )}
