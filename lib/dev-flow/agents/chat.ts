@@ -1160,8 +1160,8 @@ function buildTools(
   };
 }
 
-// Legacy ContextAssembler fetched max(limit, 30) rows and then compressed them
-// into the token budget; the fetch cap plays that role here.
+// History is fetched capped at max(limit, 30) rows and then compressed into the
+// token budget.
 const HISTORY_LIMIT = 30;
 export const HISTORY_RETRY_LIMIT = 8;
 
@@ -1219,10 +1219,9 @@ async function* streamAssistantAttempt(params: {
   historyLimit: number;
   guard: ToolLoopGuard;
 }): AsyncGenerator<DevFlowChatEvent, AttemptResult, void> {
-  // Legacy ContextAssembler semantics: the recent-history fetch is
-  // boundary-agnostic (a compact boundary is an ADDITIVE memory section in the
-  // system prompt, not a truncation point); compressMessages then clips the
-  // window into the token budget.
+  // The recent-history fetch is boundary-agnostic (a compact boundary is an
+  // ADDITIVE memory section in the system prompt, not a truncation point);
+  // compressMessages then clips the window into the token budget.
   const prior = await listMessages(params.conversationId, params.historyLimit);
   const budget = defaultContextBudget(quickModelId());
   const { kept, stats: compressionStats } = compressMessages(
@@ -1316,9 +1315,9 @@ export async function* devFlowChatStream(
     }
   } catch {}
 
-  // Progressive compaction (legacy ProgressiveContextManager.ensure_headroom):
-  // when the persisted segment grows past the pressure threshold, older
-  // messages are folded into a compact-boundary summary row. Failures never
+  // Progressive compaction: when the persisted segment grows past the pressure
+  // threshold, older messages are folded into a compact-boundary summary row.
+  // Failures never
   // break the turn — the circuit breaker lives inside the compactor.
   let compaction: CompactionOutcome | null = null;
   try {

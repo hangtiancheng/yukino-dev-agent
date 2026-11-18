@@ -35,7 +35,7 @@ export async function GET(request: Request, context: RouteContext) {
     return ok(
       messages
         // System rows are compaction bookkeeping (compact boundaries /
-        // compaction failures); the legacy timeline exposed user+assistant only.
+        // compaction failures); the timeline exposes user+assistant only.
         .filter((m) => m.role === "user" || m.role === "assistant")
         .map((m) => ({
           ...toMessageView(m),

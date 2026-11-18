@@ -290,7 +290,7 @@ const find = (
   assert.equal(normalizeNodeType("session"), "conversation");
   assert.equal(normalizeNodeType("unknown_thing"), "unknown_thing");
   assert.equal(nodeKey("issue", "x"), "issue:x");
-  ok("normalizeNodeType aliases (legacy NODE_TYPE_ALIASES subset)");
+  ok("normalizeNodeType aliases");
 
   assert.ok(GraphActionSchema.safeParse({ action: "rebuild" }).success);
   assert.equal(

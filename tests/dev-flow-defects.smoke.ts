@@ -122,7 +122,7 @@ function ok(name: string): void {
     DraftCreateSchema.safeParse({ ...base, draftType: "send_sms" }).success,
     false,
   );
-  ok("DraftCreateSchema accepts the 5 legacy types, rejects others");
+  ok("DraftCreateSchema accepts the 5 draft types, rejects others");
 }
 
 {

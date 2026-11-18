@@ -291,7 +291,7 @@ try {
   await checkScoreThreshold();
   checkMemorySchemas();
   checkEvidenceCitations();
-  console.log("MIGRATION-RESTORATION SMOKE OK");
+  console.log("CORE-FEATURES SMOKE OK");
 } catch (e) {
   console.error("SMOKE FAILED:", e);
   process.exit(1);

@@ -1,6 +1,5 @@
 /**
- * Offline checks for the DevFlow progressive context compression port
- * (legacy context_compression.py + ProgressiveContextManager) and the AI Ops
+ * Offline checks for DevFlow progressive context compression and the AI Ops
  * run-event projection.
  *
  * Run: npx tsx tests/dev-flow-context-compression.smoke.ts
@@ -36,7 +35,7 @@ import {
 
 function checkModelWindows() {
   assert.equal(normalizeModelName("openai/gpt-4o-2024-05-13"), "gpt-4o");
-  // undashed date suffixes are kept (legacy regex needs -/_ separators);
+  // undashed date suffixes are kept (the date-suffix regex needs -/_ separators);
   // the prefix lookup in modelContextWindowTokens still resolves them
   assert.equal(
     normalizeModelName("claude-sonnet-4-20250514"),
@@ -330,17 +329,17 @@ function checkRetrievalCompression() {
     );
   }
 
-  // A tiny global budget stops early (legacy break behaviour).
+  // A tiny global budget stops early (budget break behaviour).
   const tight = compressRetrievalResults("alpha delta zeta", items, 260, 30);
   assert.ok(tight.length < items.length, "global budget drops trailing items");
   assert.equal(tight[0].compression.globalBudgetTokens, 30);
 
-  // The retrieve_knowledge budget formula keeps a top-5 set intact.
+  // The retrieval budget formula keeps a top-5 set intact.
   const five = Array.from({ length: 5 }, (_, i) => ({
     content: `doc ${i} about kubernetes pods. ` + "padding ".repeat(30),
   }));
   const budget = Math.min(1800, Math.max(520, 5 * 260));
-  assert.equal(budget, 1300, "top-5 budget matches legacy formula");
+  assert.equal(budget, 1300, "top-5 budget formula");
   const fiveCompressed = compressRetrievalResults(
     "kubernetes",
     five,

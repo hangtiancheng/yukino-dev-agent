@@ -31,11 +31,5 @@
     "**/*.mts",
     "scripts/codegraph-worker.mjs"
   ],
-  "exclude": [
-    "node_modules",
-    ".next",
-    ".legacy",
-    "generated",
-    "data/workspaces"
-  ]
+  "exclude": ["node_modules", ".next", "generated", "data/workspaces"]
 }

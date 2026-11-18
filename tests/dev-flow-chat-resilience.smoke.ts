@@ -49,7 +49,7 @@ import {
 }
 
 {
-  assert.equal(MAX_REPEATED_TOOL_CALLS, 2, "legacy threshold");
+  assert.equal(MAX_REPEATED_TOOL_CALLS, 2, "repeat threshold");
   const guard = new ToolLoopGuard();
   const input = { query: "flaky ci", topK: 5 };
 
@@ -142,7 +142,7 @@ import {
 }
 
 {
-  assert.equal(TOOL_RETRY_ATTEMPTS, 1, "legacy retry budget");
+  assert.equal(TOOL_RETRY_ATTEMPTS, 1, "retry budget");
 
   const ok = await executeWithRetry(async () => "value");
   assert.deepEqual(ok, { ok: true, value: "value", attempts: 1 });

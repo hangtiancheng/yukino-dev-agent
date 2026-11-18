@@ -1052,8 +1052,7 @@ export const MemoryCandidateListQuerySchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// Recall events + cross-scope memory search (port of the legacy memory_hub
-// record_recall_event / EvidenceStore.search surfaces)
+// Recall events + cross-scope memory search
 // ---------------------------------------------------------------------------
 
 export interface RecallEventInput {
@@ -1151,9 +1150,8 @@ export const MemorySearchQuerySchema = z.object({
 
 /**
  * Who triggered a {@link searchRepoMemory} call. The workspace memory panel
- * records a manual search; the chat agent records the legacy
- * `dev_flow_search_evidence` tool name so the recall audit trail keeps the same
- * shape it had before the memory MCP server was replaced by in-process tools.
+ * records a manual search; the chat agent records the `search_evidence` tool
+ * name so the recall audit trail can distinguish tool-driven recall.
  */
 export interface MemorySearchOrigin {
   toolName?: string;

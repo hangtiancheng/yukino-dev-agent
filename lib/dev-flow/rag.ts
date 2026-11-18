@@ -410,9 +410,9 @@ export async function upsertKnowledgeConfig(
 }
 
 /**
- * Legacy score_threshold pipeline stage. Fusion/rerank scores are rank-based
- * (RRF), so the absolute gate is evaluated against the dense COSINE
- * similarity of each candidate (see lib/milvus/retriever.ts guidance).
+ * Absolute score_threshold gate. Fusion/rerank scores are rank-based (RRF), so
+ * the gate is evaluated against the dense COSINE similarity of each candidate
+ * (see lib/milvus/retriever.ts guidance).
  */
 export async function applyScoreThreshold<T extends { id: string }>(
   docs: T[],
@@ -477,10 +477,10 @@ export async function searchKnowledge(
     ? hits.filter((hit) => hit.sourceType === opts.sourceType)
     : hits;
   const finalHits = kept.slice(0, topK);
-  // Query-aware extractive compression (legacy `retrieve_knowledge`): clip each
-  // hit to the sentences most relevant to the query within a per-item (260 tok)
-  // and global (min(1800, max(520, topK*260)) tok) budget before the answer gate
-  // and the LLM call. Keeps the evidence set small and on-topic, which matters
+  // Query-aware extractive compression: clip each hit to the sentences most
+  // relevant to the query within a per-item (260 tok) and global
+  // (min(1800, max(520, topK*260)) tok) budget before the answer gate and the
+  // LLM call. Keeps the evidence set small and on-topic, which matters
   // most for CJK content where 1 char ~= 1 token.
   const budget = Math.min(1800, Math.max(520, topK * 260));
   return compressRetrievalResults(query, finalHits, 260, budget).map(

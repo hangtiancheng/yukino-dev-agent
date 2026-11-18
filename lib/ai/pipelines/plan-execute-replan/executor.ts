@@ -45,8 +45,8 @@ export async function executeStep(
     stopWhen: isStepCount(10),
     providerOptions,
   });
-  // Legacy persisted one aiops_tool_call_audits row per diagnostic tool call;
-  // flatten the step trace so the graph node can record the same audit trail.
+  // Flatten the step trace so the graph node records one audit row per
+  // diagnostic tool call.
   const toolAudits: StepToolAudit[] = [];
   for (const stepResult of result.steps) {
     for (const call of stepResult.toolCalls) {

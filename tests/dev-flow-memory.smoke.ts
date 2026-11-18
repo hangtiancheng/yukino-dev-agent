@@ -46,7 +46,7 @@ import {
   assert.deepEqual(
     uniquePreserveOrder(["a", "b", "c", "d"], 2),
     ["a", "b"],
-    "first-N cut (legacy _unique_preserve_order)",
+    "first-N cut preserves order",
   );
   console.log("memory: uniquePreserveOrder OK");
 }

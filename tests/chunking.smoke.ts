@@ -413,7 +413,7 @@ async function checkIndexPolicy() {
       "project_docs:",
       "  mode: allowlist",
       "  include: [docs/**, README.md]",
-      "  exclude: ['docs/legacy/*']",
+      "  exclude: ['docs/archive/*']",
       "include_manifests: false",
     ].join("\n"),
   );
@@ -430,7 +430,7 @@ async function checkIndexPolicy() {
     "policy: glob docs/**",
   );
   assert.ok(
-    !policyAllows({ rel: "docs/legacy/old.md", sourceType: "docs" }, policy),
+    !policyAllows({ rel: "docs/archive/old.md", sourceType: "docs" }, policy),
     "policy: exclude wins",
   );
   assert.ok(
@@ -451,7 +451,7 @@ async function checkIndexPolicy() {
     policyDigest(policy),
     policyDigest(
       parseIndexPolicyYaml(
-        "project_docs:\n  mode: allowlist\n  include: [docs/**, README.md]\n  exclude: ['docs/legacy/*']\ninclude_manifests: false",
+        "project_docs:\n  mode: allowlist\n  include: [docs/**, README.md]\n  exclude: ['docs/archive/*']\ninclude_manifests: false",
       ),
     ),
   );

@@ -5,7 +5,7 @@ import * as React from "react";
 import {
   DEFAULT_THEME,
   isTheme,
-  LEGACY_THEME_STORAGE_KEYS,
+  PREVIOUS_THEME_STORAGE_KEYS,
   THEME_STORAGE_KEY,
   type ResolvedTheme,
   type Theme,
@@ -48,15 +48,15 @@ function readStoredTheme(storageKey: string): Theme | null {
   }
 
   // Migrate the old per-surface keys into the shared key.
-  for (const legacyKey of LEGACY_THEME_STORAGE_KEYS) {
-    if (legacyKey === storageKey) {
+  for (const previousKey of PREVIOUS_THEME_STORAGE_KEYS) {
+    if (previousKey === storageKey) {
       continue;
     }
-    const legacy = localStorage.getItem(legacyKey);
-    if (isTheme(legacy)) {
-      localStorage.setItem(storageKey, legacy);
-      localStorage.removeItem(legacyKey);
-      return legacy;
+    const stored = localStorage.getItem(previousKey);
+    if (isTheme(stored)) {
+      localStorage.setItem(storageKey, stored);
+      localStorage.removeItem(previousKey);
+      return stored;
     }
   }
 

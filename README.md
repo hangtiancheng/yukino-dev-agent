@@ -4,7 +4,7 @@
 
 **An AI OnCall assistant — RAG chat, interactive A2UI surfaces, and a plan-execute-replan AI Ops pipeline for alert analysis, all with first-party Prometheus monitoring.**
 
-Built on Next.js 16 + AI SDK, with Milvus for hybrid vector search (dense + native BM25, RRF-fused) and the A2UI shadcn catalog inlined from the a2ui repo (`catalog/` + `components/ui/`) for LLM-generated UI.
+Built on Next.js 16 + AI SDK, with Milvus for hybrid vector search (dense + native BM25, RRF-fused) and an inlined A2UI shadcn catalog (`catalog/` + `components/ui/`) for LLM-generated UI.
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
@@ -127,130 +127,6 @@ Prometheus port: `9090`. Grafana port: `3000` (`3000` under Docker is the Next.j
 
 ---
 
-## Migration from `.legacy`
-
-This repo consolidates two Python projects — `.legacy/agent_py-release-2026-09-08`
-(the OnCall backend + Vue frontend) and `.legacy/DevFlow-AI` (the DevFlow FastAPI
-backend + Next.js frontend) — into one Next.js 16 + AI SDK app. The port is
-feature-complete except for the deliberate divergences listed below.
-
-Restored on top of the initial port:
-
-- DevFlow progressive context compression (`lib/dev-flow/context-compression.ts`,
-  a port of `context_compression.py` + `ProgressiveContextManager`): token-pressure
-  stages, token-budgeted history windowing, LLM compaction into persisted
-  compact-boundary messages with session-memory / extractive fallbacks, key-fact
-  preservation, and a failure circuit breaker.
-- AI Ops tool-call audits — every plan-step tool call lands in `ToolCallAudit`
-  under session `aiops:<runId>` (legacy `aiops_tool_call_audits`), readable via
-  `GET /api/tool_audits?session=aiops:<runId>`.
-- AI Ops run event timeline — `AiOpsRun.events` persists a truncated
-  PlanExecuteEvent trail (plan / step start / step output / replans), the
-  lightweight successor of the legacy evidence-chain tables, rendered in the ops
-  panel run history.
-- DevFlow chat memory tools — the legacy memory MCP server's stdio tools are now
-  in-process chat tools: `search_evidence` (semantic recall over the repo KB AND
-  the synced GitHub content index; successor of `dev_flow_search_evidence`),
-  `read_conversation_transcript` (verbatim transcript reading that reaches past
-  the context window; successor of `dev_flow_get_thread_context`) and the existing
-  `memory_recall` / `memory_propose`. Each recall audits a `RecallEvent` row. The
-  third legacy tool, `dev_flow_read_session_events` (sealed-session recall), is
-  covered by `memory_recall` + `read_conversation_transcript`, since sealing now
-  persists `ConversationMemory` snapshots instead of separate sealed sessions.
-- DevFlow chat workflow tool — the legacy chat agent could autonomously run a
-  bounded multi-agent engineering review (`workflow.run_engineering_review`); the
-  chat agent exposes this again as the `run_engineering_workflow` tool, which
-  plans bounded claims, runs the task agents in parallel, observes and synthesizes
-  a decision memo, and persists an `AgentWorkflowRun` (the same runtime that backs
-  the Workflow Runs page).
-- Query-aware retrieval evidence compression — the legacy RAG pipeline
-  (`retrieve_knowledge` / `search_similar_documents`) clipped every retrieved
-  chunk down to the sentences most relevant to the query inside a per-item (260
-  tok) and global (`min(1800, max(520, topK*260))` tok) budget before the answer
-  gate and the LLM call. The initial port fed whole chunks instead, which for CJK
-  content (1 char ≈ 1 token) cost ~3x the tokens and diluted the signal. Restored
-  as `extractRelevantSnippet` + `compressRetrievalResults` in
-  `lib/dev-flow/context-compression.ts`, applied by `searchKnowledge`
-  (`lib/dev-flow/rag.ts`) and by the `search_project_docs` chat tool. One deliberate
-  improvement over the legacy: the sentence splitter also breaks after CJK 。！？
-  without requiring trailing whitespace (the legacy `SENTENCE_SPLIT_PATTERN` never
-  split space-less CJK prose, so the snippet degraded to a head clip that could
-  cut the matching sentence away); ASCII `.!?` still require following whitespace
-  so version numbers like `1.2.3` stay intact.
-- Knowledge-QA prompt-injection guard — the legacy DevFlow RAG QA wrapped evidence
-  in `<knowledge>` tags and told the model the passages are untrusted data, not
-  instructions. Restored: `KNOWLEDGE_QA_PROMPT` carries the untrusted-data rule and
-  `askKnowledge` wraps the evidence in `<knowledge>` tags.
-
-Deliberate divergences:
-
-OnCall (from `agent_py`):
-
-- **Auth & tenancy removed** — legacy had user accounts, bearer sessions and
-  per-user scoping; both surfaces here are public and single-tenant.
-- **Server-side chat sessions → client-side** — legacy persisted chat sessions
-  per user; histories now live in browser localStorage (client session ids still
-  anchor tool audits and feedback). Consequently the legacy memory-mode selector
-  (`every_30_turns` / `context_70_percent` / `manual` compaction) and the
-  context-usage API are replaced by the automatic rolling summary
-  (`MEMORY_SUMMARY_ENABLED`).
-- **Background job runtime removed** — legacy queued document indexing through a
-  worker pool with cancel/retry; uploads and startup indexing run synchronously,
-  and `POST /api/knowledge_docs/[name]` offers manual re-index.
-- **Single knowledge base** — legacy supported multiple knowledge bases per user;
-  here one `FILE_DIR`-backed KB serves OnCall (DevFlow keeps per-repo KBs in
-  Milvus as before).
-- **Chunking strategy fixed** — legacy exposed per-document strategy selection
-  (fixed-character / markdown-heading / paragraph / legacy-word); the OnCall KB
-  always uses the heading-aware chunker now.
-- **Evidence-chain tables replaced** — legacy `aiops_diagnostic_steps` /
-  `aiops_diagnostic_evidence` / report-evidence links / graph checkpoints become
-  `AiOpsRun.events` + `ToolCallAudit` (see above).
-- **Project configuration** — legacy's shared/protected project config becomes
-  plain `.env` + `lib/config.ts`.
-
-DevFlow (from `DevFlow-AI`):
-
-- **Evaluation suites not ported** — the RAG-quality eval (the ragas integration)
-  and the eval-run persistence / compare / rescore UI depend on the Python eval
-  ecosystem and are not ported; retrieval quality is covered by the retrieval-test
-  runs on the Knowledge page instead. The deterministic agent-eval assertions from
-  the legacy `run_basic_eval` (issue-triage category accuracy, PR key-file
-  coverage, CI pytest-failure detection, output-schema validation, skill-registry
-  coverage) are not exposed as a runtime eval feature but are covered by the
-  offline smoke suites (`tests/dev-flow-analysis.smoke.ts`,
-  `tests/dev-flow-skills.smoke.ts`, `tests/dev-flow-context-compression.smoke.ts`).
-- **Single embedding contract** — legacy let each repo KB pick its own embedding
-  provider / model / dimensions (`GET /api/rag/models` + a per-KB embedding
-  contract with validation); here one global embedding config
-  (`EMBEDDING_PROVIDER` + `lib/config.ts`) serves the whole app, so the per-KB
-  model catalog and embedding-contract validation are gone. Retrieval method /
-  rerank / topK / score threshold / chunk size + overlap stay per-repo
-  configurable via `GET|PUT /api/dev-flow/knowledge/config`.
-- **PR worktree snapshots removed** — `worktree_manager` (snapshot / worktree /
-  cleanup endpoints) is replaced by the read-only managed-clone design
-  (`lib/dev-flow/workspace.ts`).
-- **MCP stdio surfaces removed** — the legacy memory MCP server and the skills
-  `mcp-status` probe are replaced by in-process tools (the memory tools are
-  listed under "Restored" above; `mcp-status` is moot because DevFlow tools run
-  in-process, not over stdio).
-- **EvidenceItem table removed** — legacy rebuilt a keyword evidence index from
-  chat history; the Milvus GitHub content index (semantic search over synced
-  issues / PRs / CI logs) supersedes it in
-  `GET /api/dev-flow/repos/:id/memory/search`.
-- **Search metadata filters not ported** — legacy `POST /api/search` (and the
-  retrieval-test request) accepted structured entity metadata filters
-  (label / path / module / state / start_date / end_date) applied to GitHub
-  issue/PR/CI documents; the port's `POST /api/dev-flow/knowledge/search` filters by
-  scope (kb / item / project) and `sourceType` instead. These filters were never
-  surfaced in the legacy UI and do not map onto the Milvus source-prefix model.
-- **Streaming-only chat** — legacy also exposed a non-streaming `POST /api/chat`;
-  the port streams SSE exclusively.
-- **`thinking_delta` second-LLM stream not ported** (documented in
-  `lib/dev-flow/analyze-stream.ts`).
-
----
-
 ## Monitoring
 
 Pipeline: yukino-sentry browser SDK → `POST /api/log` → `lib/metrics.ts` (prom-client) → `GET /api/metrics` → Prometheus.
@@ -315,7 +191,7 @@ source: `lib/ai/pipelines/chat.ts` L54-81
 
 source: `lib/ai/a2ui/prompt.ts`
 
-Embedded into the chat system prompt and the uiify system prompt. Assembled by `generateSystemPrompt("direct-json", ...)` from `lib/a2ui/prompt` (inlined from the a2ui repo) against the shadcn catalog (with `removeStrictValidation` applied): role + SDK workflow rules + app-specific rules + the full A2UI JSON schema contract (server-to-client, common types, catalog) + 3 few-shot examples (alert list, metrics report, silence form) generated by builder functions.
+Embedded into the chat system prompt and the uiify system prompt. Assembled by `generateSystemPrompt("direct-json", ...)` from `lib/a2ui/prompt` against the shadcn catalog (with `removeStrictValidation` applied): role + SDK workflow rules + app-specific rules + the full A2UI JSON schema contract (server-to-client, common types, catalog) + 3 few-shot examples (alert list, metrics report, silence form) generated by builder functions.
 
 ```md
 ## Interactive UI (A2UI v0.9)

@@ -296,7 +296,7 @@ check("deterministicPlanSpec: skips categories with no signal", () => {
   assert.equal(spec.claims.length, 0);
 });
 
-check("agentNameForTaskType maps to the legacy agent names", () => {
+check("agentNameForTaskType maps task types to agent names", () => {
   assert.equal(agentNameForTaskType("issue_analysis"), "issue_analyst_agent");
   assert.equal(agentNameForTaskType("pr_review"), "pr_review_agent");
   assert.equal(agentNameForTaskType("ci_debug"), "ci_debug_agent");
@@ -476,44 +476,41 @@ check("observe: evidence gap and low confidence warnings", () => {
   ]);
 });
 
-check(
-  "observe: confidence synthesis follows the legacy formula and clamps",
-  () => {
-    const observation = observeWorkflow({ goal: "g", claims: [] }, [
+check("observe: confidence synthesis follows the formula and clamps", () => {
+  const observation = observeWorkflow({ goal: "g", claims: [] }, [
+    makeResult({
+      taskId: "t1",
+      output: { priority: "P0" },
+      confidence: 0.8,
+      evidenceCount: 1,
+    }),
+    makeResult({
+      taskId: "t2",
+      entityRef: "34",
+      taskType: "pr_review",
+      entityType: "pull_request",
+      output: {},
+      confidence: 0.4,
+      evidenceCount: 1,
+    }),
+  ]);
+  assert.equal(observation.overall_confidence, 0.35);
+  const empty = observeWorkflow({ goal: "g", claims: [] }, []);
+  assert.equal(empty.overall_confidence, 0.55);
+  const failing = observeWorkflow(
+    { goal: "g", claims: [] },
+    [1, 2, 3, 4].map((n) =>
       makeResult({
-        taskId: "t1",
-        output: { priority: "P0" },
-        confidence: 0.8,
-        evidenceCount: 1,
+        taskId: `t${n}`,
+        status: "failed",
+        error: "x",
+        confidence: null,
+        evidenceCount: 0,
       }),
-      makeResult({
-        taskId: "t2",
-        entityRef: "34",
-        taskType: "pr_review",
-        entityType: "pull_request",
-        output: {},
-        confidence: 0.4,
-        evidenceCount: 1,
-      }),
-    ]);
-    assert.equal(observation.overall_confidence, 0.35);
-    const empty = observeWorkflow({ goal: "g", claims: [] }, []);
-    assert.equal(empty.overall_confidence, 0.55);
-    const failing = observeWorkflow(
-      { goal: "g", claims: [] },
-      [1, 2, 3, 4].map((n) =>
-        makeResult({
-          taskId: `t${n}`,
-          status: "failed",
-          error: "x",
-          confidence: null,
-          evidenceCount: 0,
-        }),
-      ),
-    );
-    assert.equal(failing.overall_confidence, 0.1);
-  },
-);
+    ),
+  );
+  assert.equal(failing.overall_confidence, 0.1);
+});
 
 check("shouldReplan: blocker + budget → true; budget exhausted → false", () => {
   const blockerObservation: WorkflowObservation = {

@@ -1,22 +1,15 @@
 /**
  * Progressive context compression for DevFlow chat.
  *
- * Port of the legacy Python implementation:
- * - `.legacy/DevFlow-AI/backend/app/services/context_compression.py`
- * - `ProgressiveContextManager` + `ContextAssembler` in
- *   `.legacy/DevFlow-AI/backend/app/services/chat_memory.py`
+ * Model history is user/assistant text only (tool traces persist in
+ * ChatMessage.toolCalls and are never replayed to the model), so there is no
+ * microcompaction stage for stale tool results and no tool_use/tool_result
+ * pairing to preserve.
  *
- * Adaptations to the current architecture:
- * - Legacy fed raw tool messages into the model history and micro-compacted
- *   stale regenerable tool results. The current history is user/assistant text
- *   only (tool traces persist in ChatMessage.toolCalls and are never replayed
- *   to the model), so the microcompact stage has no input and is omitted.
- * - `adjust_keep_start_to_preserve_api_invariants` (tool_use/tool_result
- *   pairing) is unnecessary for text-only history.
- * - Compact boundaries persist as ChatMessage rows with role "system" and
- *   meta.subtype "compact_boundary". History assembly injects the latest
- *   boundary summary into the system prompt; the UI timeline filters system
- *   rows out (same as the legacy GET /chat/history endpoint).
+ * Compact boundaries persist as ChatMessage rows with role "system" and
+ * meta.subtype "compact_boundary". History assembly injects the latest
+ * boundary summary into the system prompt; the UI timeline filters system
+ * rows out.
  */
 import { generateText } from "ai";
 import { z } from "zod/v4";
@@ -34,7 +27,7 @@ const asJson = (value: unknown): Prisma.InputJsonValue =>
   value as Prisma.InputJsonValue;
 
 // ---------------------------------------------------------------------------
-// Tunables — legacy `app/core/config.py` defaults.
+// Tunables — context budget defaults.
 // ---------------------------------------------------------------------------
 export const CONTEXT_MAX_INPUT_TOKENS = 24_000;
 export const CONTEXT_RESERVED_RESPONSE_TOKENS = 3_000;
@@ -56,7 +49,7 @@ export const COMPACT_BOUNDARY_SUBTYPE = "compact_boundary";
 export const COMPACTION_FAILURE_SUBTYPE = "compaction_failure";
 
 // ---------------------------------------------------------------------------
-// Model context windows (ported tables).
+// Model context windows.
 // ---------------------------------------------------------------------------
 export const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
   "deepseek-v4-pro": 1_000_000,
@@ -168,7 +161,7 @@ export function effectiveContextWindowTokens(
         Math.min(CONTEXT_RESERVED_RESPONSE_TOKENS, Math.floor(modelWindow / 2)),
       );
   const dynamicWindow = Math.max(4096, modelWindow - reserved);
-  // legacy: context_dynamic_model_window_enabled defaults to true
+  // Dynamic model windows are enabled by default.
   return Math.max(CONTEXT_MAX_INPUT_TOKENS, dynamicWindow);
 }
 
@@ -370,26 +363,20 @@ export function compressMessages(
 }
 
 // ---------------------------------------------------------------------------
-// Query-aware extractive retrieval compression (ported `extract_relevant_snippet`
-// + `compress_retrieval_results` from the legacy context_compression.py).
+// Query-aware extractive retrieval compression.
 //
-// The legacy RAG pipeline (retrieve_knowledge / search_similar_documents) clips
-// every retrieved chunk down to the sentences most relevant to the query, inside
-// a per-item and a global token budget, BEFORE the answer gate and the LLM call.
-// The initial port fed whole chunks instead: for CJK content (1 char ~= 1 token)
-// an 800-char chunk is ~800 tokens, so a top-5 evidence set cost ~4000 tokens
-// versus the legacy ~1300-token budget, and diluted the signal with off-query
-// sentences. These helpers restore that stage.
+// Every retrieved chunk is clipped down to the sentences most relevant to the
+// query, inside a per-item and a global token budget, BEFORE the answer gate and
+// the LLM call. Whole chunks are expensive for CJK content (1 char ~= 1 token),
+// so a top-5 evidence set would cost ~4000 tokens and dilute the signal with
+// off-query sentences; the budget here is ~1300 tokens for the same top-5 set.
 // ---------------------------------------------------------------------------
 const WORD_PATTERN = /[a-zA-Z0-9_\-\u4e00-\u9fff]+/g;
-// Deliberate improvement over the legacy `SENTENCE_SPLIT_PATTERN`
-// (`(?<=[.!?\n\u3002\uff01\uff1f])\s+`), which only splits when punctuation is
-// followed by whitespace. Space-less CJK prose (the dominant content here) never
-// split under that rule, so `extract_relevant_snippet` degraded to a head clip
-// and could cut the matching sentence away entirely. This variant splits after
-// CJK 。！？ without requiring trailing whitespace, keeps the whitespace
-// requirement for ASCII .!? (so version numbers like 1.2.3 stay intact), and
-// still splits on newlines.
+// Splits after CJK 。！？ without requiring trailing whitespace. Space-less CJK
+// prose (the dominant content here) would otherwise never split, degrading the
+// snippet to a head clip that could cut the matching sentence away entirely.
+// ASCII .!? still require trailing whitespace (so version numbers like 1.2.3
+// stay intact), and newlines always split.
 const SENTENCE_SPLIT_PATTERN = /(?<=[\u3002\uff01\uff1f])|(?<=[.!?])\s+|\n+/;
 
 function words(text: string): string[] {
@@ -411,11 +398,10 @@ function countOccurrences(haystack: string, needle: string): number {
 
 /**
  * Extract the sentences of `text` most relevant to `query`, clipped to a token
- * budget. Faithful port of the legacy `extract_relevant_snippet`: a sentence
- * scores 3 per distinct matched query word plus its total occurrence count, with
- * a +4 bonus when the whole query appears verbatim; the top 4 positive-scoring
- * sentences are kept in original order. Falls back to a plain budget clip when
- * the query has no words or nothing matches.
+ * budget. A sentence scores 3 per distinct matched query word plus its total
+ * occurrence count, with a +4 bonus when the whole query appears verbatim; the
+ * top 4 positive-scoring sentences are kept in original order. Falls back to a
+ * plain budget clip when the query has no words or nothing matches.
  */
 export function extractRelevantSnippet(
   query: string,
@@ -484,9 +470,8 @@ export interface CompressedRetrievalItem<T> {
 
 /**
  * Compress retrieved items into query-relevant snippets within a per-item and an
- * optional global token budget. Faithful port of the legacy
- * `compress_retrieval_results`: items past the global budget are dropped (the
- * legacy stops iterating), each kept item carries a `compression` trace.
+ * optional global token budget. Items past the global budget are dropped, and
+ * each kept item carries a `compression` trace.
  */
 export function compressRetrievalResults<T extends { content: string }>(
   query: string,
@@ -541,7 +526,7 @@ export function compressRetrievalResults<T extends { content: string }>(
 }
 
 // ---------------------------------------------------------------------------
-// Key-fact preservation (ported).
+// Key-fact preservation.
 // ---------------------------------------------------------------------------
 const PATH_LIKE_PATTERN =
   /(?:[A-Za-z]:[\\/])?(?:[\w.@()+\- ]+[\\/])+[\w.@()+\- ]+\.[A-Za-z0-9_]+(?::\d+)?/g;
@@ -653,7 +638,7 @@ export function ensureCompactionSummaryPreservesKeyFacts(
 }
 
 // ---------------------------------------------------------------------------
-// Compaction summary building (ported).
+// Compaction summary building.
 // ---------------------------------------------------------------------------
 export const COMPACT_SUMMARY_SYSTEM_PROMPT = `请在上下文压缩后, 为 DevFlow AI 创建一份可延续工作的摘要;
 目标不是单纯减少 token, 而是为软件工程 Agent 保留工作连续性
@@ -766,7 +751,7 @@ export function fallbackCompactionSummary(
 }
 
 // ---------------------------------------------------------------------------
-// Stage plans (ported `_compaction_plan_for_stage`).
+// Stage plans.
 // ---------------------------------------------------------------------------
 export interface CompactionPlan {
   keepRecent: number;
@@ -862,7 +847,7 @@ export async function latestCompactBoundary(
 }
 
 // ---------------------------------------------------------------------------
-// Structured session memory rendering (ported `render_structured_memory`).
+// Structured session memory rendering.
 // ---------------------------------------------------------------------------
 const stringList = (value: unknown): string[] => {
   const parsed = z.array(z.string()).safeParse(value);
@@ -909,7 +894,7 @@ export function renderStructuredMemory(
 }
 
 // ---------------------------------------------------------------------------
-// Orchestrator (ported `ProgressiveContextManager.ensure_headroom`).
+// Orchestrator.
 // ---------------------------------------------------------------------------
 export interface CompactionOutcome {
   attempted: boolean;
@@ -968,9 +953,9 @@ async function summaryFor(params: {
   }
 
   const payload = buildCompactionSummaryPayload(params.messages);
-  // Faithful to legacy: an LLM failure aborts this compaction attempt and is
-  // recorded by the caller's circuit breaker (the deterministic fallback is
-  // only used for an *empty* model reply) — so let the error propagate.
+  // An LLM failure aborts this compaction attempt and is recorded by the
+  // caller's circuit breaker (the deterministic fallback is only used for an
+  // *empty* model reply) — so let the error propagate.
   const llmSummary = formatCompactionSummary(
     await llmCompactionSummary(payload, params.currentMessage),
   );
@@ -1009,8 +994,8 @@ function messagesToKeep(
   const keep = Math.max(2, keepCount);
   const startIndex = Math.max(0, rows.length - keep);
   const keepRows = rows.slice(startIndex);
-  // Legacy invariant: never start the kept window on an assistant reply whose
-  // user prompt was summarized away.
+  // Never start the kept window on an assistant reply whose user prompt was
+  // summarized away.
   if (
     keepRows.length > 0 &&
     keepRows[0].role === "assistant" &&
@@ -1054,8 +1039,7 @@ export async function ensureContextHeadroom(params: {
     (row) => row.role === "user" || row.role === "assistant",
   );
   // The current user message is already persisted, so it is part of the
-  // segment; do not double count it (legacy added it separately because the
-  // message was not yet in the store at that point).
+  // segment; do not double count it.
   const rawTokens = contextRows.reduce(
     (sum, row) => sum + estimateTokens(row.content),
     0,

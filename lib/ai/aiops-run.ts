@@ -11,11 +11,9 @@ export interface AiOpsRunFinalize {
   error?: string;
 }
 
-// The legacy pipeline persisted a full evidence chain (steps, per-tool
-// evidence, checkpoints). The current run row keeps a bounded, truncated
-// PlanExecuteEvent timeline instead — enough to reconstruct the step-by-step
-// diagnosis after the fact; per-tool detail lives in ToolCallAudit rows keyed
-// by `aiops:<runId>`.
+// The run row keeps a bounded, truncated PlanExecuteEvent timeline — enough to
+// reconstruct the step-by-step diagnosis after the fact; per-tool detail lives
+// in ToolCallAudit rows keyed by `aiops:<runId>`.
 export const MAX_RUN_EVENTS = 300;
 export const RUN_EVENT_OUTPUT_CHARS = 1_200;
 export const RUN_EVENT_STEP_CHARS = 400;

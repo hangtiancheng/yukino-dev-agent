@@ -530,8 +530,8 @@ export function useChat() {
 
   const triggerAIOps = useCallback(
     async (alert?: unknown): Promise<AIOpsResult | null> => {
-      // Owns the fresh-session reset (legacy AiopsRunForm always started a
-      // new workspace run) so it never depends on stale closure state.
+      // Owns the fresh-session reset so it never depends on stale closure
+      // state.
       const freshSessionId = generateSessionId();
       setSessionId(freshSessionId);
       setIsStreaming(true);

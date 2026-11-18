@@ -136,7 +136,7 @@ const alertmanagerPayload = [
     password: "pass",
   };
   const promSource: AlertSourceConfig = {
-    name: "prom-legacy",
+    name: "prom-primary",
     type: "prometheus",
     baseUrl: "http://127.0.0.1:9090",
   };
@@ -293,7 +293,7 @@ const alertmanagerPayload = [
   assert.equal(
     cleanMarkdownReport("```markdown\n" + good + "\n```"),
     good,
-    "whole-response fence unwrapped (legacy parity)",
+    "whole-response fence unwrapped",
   );
   assert.equal(cleanMarkdownReport('{"report": "done"}'), null);
   assert.equal(
@@ -314,11 +314,7 @@ const alertmanagerPayload = [
     },
     detail: ["step one output", "step two output"],
   });
-  assert.match(
-    fallback,
-    /High\\\|Error/,
-    "table pipes escaped (legacy parity)",
-  );
+  assert.match(fallback, /High\\\|Error/, "table pipes escaped");
   assert.match(fallback, /1\. step one output/);
   assert.match(fallback, /## 活跃告警列表/);
   assert.ok(

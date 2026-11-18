@@ -375,7 +375,7 @@ function checkReviewChecklist() {
 
   const breaking = buildReviewChecklist({
     ...baseChecklistInput,
-    title: "feat(api)!: drop legacy endpoints",
+    title: "feat(api)!: drop deprecated endpoints",
   });
   assert.ok(
     breaking.findings.some((f) => f.title === "Breaking change" && f.blocking),

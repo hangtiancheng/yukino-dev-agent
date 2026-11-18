@@ -14,7 +14,7 @@ export const THEME_STORAGE_KEY = "yukino-theme";
  * Per-surface storage keys from before the theme moved to the root layout.
  * They are migrated into `THEME_STORAGE_KEY` on first run.
  */
-export const LEGACY_THEME_STORAGE_KEYS = ["dev-flow-theme"];
+export const PREVIOUS_THEME_STORAGE_KEYS = ["dev-flow-theme"];
 
 export const DEFAULT_THEME: Theme = "system";
 
@@ -29,7 +29,7 @@ export function isTheme(value: unknown): value is Theme {
 
 export const THEME_SCRIPT = `(function () {
   var KEY = ${JSON.stringify(THEME_STORAGE_KEY)};
-  var LEGACY = ${JSON.stringify(LEGACY_THEME_STORAGE_KEYS)};
+  var PREVIOUS = ${JSON.stringify(PREVIOUS_THEME_STORAGE_KEYS)};
   var VALID = ${JSON.stringify(THEME_VALUES)};
   function read(key) {
     try {
@@ -41,13 +41,13 @@ export const THEME_SCRIPT = `(function () {
   }
   var theme = read(KEY);
   if (!theme) {
-    for (var i = 0; i < LEGACY.length; i++) {
-      var legacy = read(LEGACY[i]);
-      if (legacy) {
-        theme = legacy;
+    for (var i = 0; i < PREVIOUS.length; i++) {
+      var stored = read(PREVIOUS[i]);
+      if (stored) {
+        theme = stored;
         try {
-          window.localStorage.setItem(KEY, legacy);
-          window.localStorage.removeItem(LEGACY[i]);
+          window.localStorage.setItem(KEY, stored);
+          window.localStorage.removeItem(PREVIOUS[i]);
         } catch (error) {}
         break;
       }

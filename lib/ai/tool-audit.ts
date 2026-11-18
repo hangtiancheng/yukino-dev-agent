@@ -33,8 +33,7 @@ export interface ToolAuditInput {
 
 /**
  * Fire-and-forget audit row. Shared by the OnCall chat pipeline (session id =
- * chat session) and the AI Ops pipeline (session id = `aiops:<runId>`), mirroring
- * the legacy `tool_call_audits` + `aiops_tool_call_audits` tables.
+ * chat session) and the AI Ops pipeline (session id = `aiops:<runId>`).
  */
 export function recordToolAudit(input: ToolAuditInput): void {
   prisma.toolCallAudit

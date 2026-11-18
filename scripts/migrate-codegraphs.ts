@@ -32,7 +32,7 @@ async function main() {
   }
   if (failures > 0) {
     throw new Error(
-      `${failures} repositories could not be indexed. Fix their checkouts and rerun; legacy tables have not been removed.`,
+      `${failures} repositories could not be indexed. Fix their checkouts and rerun; the obsolete tables have not been removed.`,
     );
   }
   await prisma.$transaction([

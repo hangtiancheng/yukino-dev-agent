@@ -380,7 +380,7 @@ export function deterministicPlanSpec(
 function plannerPrompt(goal: string, snapshot: EntitySnapshot): string {
   return `${AI_META_RULES}
 
-You are the DevFlow Workflow Planner (legacy planner_agent.py). Build a bounded
+You are the DevFlow Workflow Planner. Build a bounded
 multi-agent workflow spec for the engineering goal below. Every claim is one
 task with an explicit entity boundary: agents may only reason about the entity
 their claim references.
@@ -951,7 +951,7 @@ export function deterministicMemo(
 
 const SYNTHESIS_PROMPT = `${AI_META_RULES}
 
-You are the DevFlow Synthesis Agent (legacy synthesis_agent.py). Turn the
+You are the DevFlow Synthesis Agent. Turn the
 multi-agent workflow results below into ONE engineering decision memo in
 markdown with exactly these sections: "## Multi-agent decision memo" (goal,
 decision, observer confidence), "## Agent output summary", "## Observer
